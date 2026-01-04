@@ -479,18 +479,4 @@ def update_rsi_db(result_db_path=RESULTS_DB_PATH, date_list=None, period=-5):
 
 
 # Maintain backward compatibility
-def init_rsp_db(db_path=JQUANTS_DB_PATH, result_db_path=RESULTS_DB_PATH):
-    """Wrapper for backward compatibility"""
-    return init_rsp_db(db_path, result_db_path)
-
-def update_rsp_db(db_path=JQUANTS_DB_PATH, result_db_path=RESULTS_DB_PATH, calc_start_date=None, calc_end_date=None, period=-5):
-    """Wrapper for backward compatibility"""
-    return update_rsp_db(db_path, result_db_path, calc_start_date, calc_end_date, period)
-
-def update_rsi_db(result_db_path=RESULTS_DB_PATH, date_list=None, period=-5):
-    """Wrapper for backward compatibility"""
-    return update_rsi_db(result_db_path, date_list, period)
-
-def init_results_db(db_path):
-    """Wrapper for backward compatibility"""
-    return init_results_db(db_path)
+# Removed duplicate function definitions that were causing RecursionError

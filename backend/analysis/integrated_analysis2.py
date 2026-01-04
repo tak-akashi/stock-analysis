@@ -188,8 +188,12 @@ def get_yfinance_data(db_path: str, logger: logging.Logger) -> pd.DataFrame:
 
 # --- Main Analysis Logic ---
 
-def main():
-    """Main function to run the optimized data analysis pipeline."""
+def main(target_date=None):
+    """Main function to run the optimized data analysis pipeline.
+    
+    Args:
+        target_date: Optional target date in 'YYYY-MM-DD' format. If None, uses latest date.
+    """
     logger = setup_logging()
     logger.info("Starting OPTIMIZED integrated data analysis...")
 
@@ -200,12 +204,20 @@ def main():
             logger.error("No available analysis dates found. Exiting.")
             return
 
-        latest_date = available_dates[0]
-        logger.info(f"Using latest analysis date: {latest_date}")
+        # Use target_date if provided and valid, otherwise use latest
+        if target_date and target_date in available_dates:
+            analysis_date = target_date
+            logger.info(f"Using specified analysis date: {analysis_date}")
+        else:
+            analysis_date = available_dates[0]
+            if target_date:
+                logger.warning(f"Specified date {target_date} not found in available dates. Using latest: {analysis_date}")
+            else:
+                logger.info(f"Using latest analysis date: {analysis_date}")
 
         # 1. Get comprehensive analysis data (this is already optimized)
         logger.info("Fetching comprehensive analysis data...")
-        comprehensive_df = get_comprehensive_analysis(latest_date)
+        comprehensive_df = get_comprehensive_analysis(analysis_date)
         if comprehensive_df.empty:
             logger.error("Could not retrieve comprehensive analysis data.")
             return
@@ -273,7 +285,7 @@ def main():
         # --- Optimized Excel Output ---
         output_dir = os.path.join(PROJECT_ROOT, "output")
         os.makedirs(output_dir, exist_ok=True)
-        output_filename = f"integrated_analysis_{latest_date.replace('-','')}.xlsx"
+        output_filename = f"integrated_analysis_{analysis_date.replace('-','')}.xlsx"
         output_path = os.path.join(output_dir, output_filename)
 
         try:
@@ -292,4 +304,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Run optimized integrated analysis')
+    parser.add_argument('--date', type=str, help='Target date in YYYY-MM-DD format (default: latest from database)')
+    args = parser.parse_args()
+    
+    main(target_date=args.date)

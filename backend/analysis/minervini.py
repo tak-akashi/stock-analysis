@@ -497,18 +497,4 @@ def update_type8_db(conn: sqlite3.Connection, date_list: List[str], period: int 
     database.update_type8(dest_db_path, date_list, period)
 
 
-# Original compatibility functions (call optimized versions)
-def init_minervini_db(source_conn: sqlite3.Connection, dest_conn: sqlite3.Connection, code_list: List[str]) -> None:
-    """Backward compatibility - calls optimized version."""
-    init_minervini_db(source_conn, dest_conn, code_list)
-
-
-def update_minervini_db(source_conn: sqlite3.Connection, dest_conn: sqlite3.Connection, code_list: List[str], 
-                       calc_start_date: str, calc_end_date: str, period: int = 5) -> None:
-    """Backward compatibility - calls optimized version."""
-    update_minervini_db(source_conn, dest_conn, code_list, calc_start_date, calc_end_date, period)
-
-
-def update_type8_db(conn: sqlite3.Connection, date_list: List[str], period: int = -5) -> None:
-    """Backward compatibility - calls optimized version."""
-    update_type8_db(conn, date_list, period)
+# Removed duplicate function definitions that were causing RecursionError
