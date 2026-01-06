@@ -13,8 +13,8 @@ from datetime import datetime
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
-from backend.analysis.integrated_analysis import (
-    get_comprehensive_analysis, 
+from backend.analysis.integrated_analysis import (  # noqa: E402
+    get_comprehensive_analysis,
     create_analysis_summary,
     check_database_coverage
 )

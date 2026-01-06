@@ -2,7 +2,7 @@
 
 ## 概要
 
-このプロジェクトは、日本の株式市場に関するデータを収集、保存、分析するためのツール群です。J-Quants APIおよびyfinanceライブラリを利用して、日々の株価、企業情報、銘柄マスターなどを自動で取得・更新し、SQLiteデータベースに格納します。
+このプロジェクトは、日本の株式市場に関するデータを収集、保存、分析するためのツール群です。J-Quants APIを利用して、日々の株価、財務諸表データ、銘柄マスターなどを自動で取得・更新し、SQLiteデータベースに格納します。
 
 収集したデータは、様々な分析手法（ミネルヴィニ戦略、高値・安値比率、相対力、チャートパターン分類など）を用いて評価され、統合的な視点から銘柄選定や投資戦略の構築に活用できます。
 
@@ -10,7 +10,7 @@
 
 *   **データ収集と管理:**
     *   **日次株価取得 (J-Quants):** 平日の夜間にJ-Quants APIから最新の株価四本値（始値, 高値, 安値, 終値）および出来高を取得し、`data/jquants.db` に保存します。
-    *   **週次企業情報取得 (yfinance):** 週末にyfinanceライブラリを通じて、各企業の属性情報（セクター、業種など）を取得し、`data/yfinance.db` に保存します。
+    *   **週次財務データ取得 (J-Quants Statements):** 週末にJ-Quants Statements APIから財務諸表データ（売上高、利益、EPS、BPS等）を取得し、PER・PBR・ROE等の財務指標を計算して `data/statements.db` に保存します。
     *   **月次マスターデータ更新:** 毎月1回、最新の銘柄一覧（マスターデータ）を更新し、`data/master.db` に保存します。
 
 *   **株式分析:**
@@ -29,7 +29,7 @@
 *   **`relative_strength.py`**: 相対力（Relative Strength Percentage: RSP）および相対力指数（Relative Strength Index: RSI）を計算するロジックです。銘柄の市場に対する相対的なパフォーマンスを評価します。結果は `data/analysis_results.db` の `relative_strength` テーブルに保存されます。
 *   **`chart_classification.py`**: 株価チャートのパターンを分類するロジックです。過去の株価データから特定の期間（20日、60日、120日、240日、および動的選択される960日または1200日）のチャート形状を抽出し、「上昇」「下落」「もみ合い」などのパターンに分類します。データの可用性に基づいて自動的に長期ウィンドウ（1200日 ≥ 960日）を選択し、バッチ処理による高性能な分析を提供します。結果は `data/analysis_results.db` の `classification_results` テーブルに保存されます。
 *   **`integrated_analysis.py`**: 上記の各分析プログラムによって生成された結果（`hl_ratio`, `minervini`, `relative_strength`, `classification_results`）を `data/analysis_results.db` から読み込み、それらを統合して複合的な評価を行うためのユーティリティ関数を提供します。これにより、複数の指標を横断的に評価し、より精度の高い銘柄選定を支援します。このスクリプト自体はデータを生成せず、既存のデータをクエリ・集計します。
-*   **`integrated_analysis2.py`**: `integrated_analysis.py` の機能を利用し、各分析結果を統合して、最終的な分析結果をExcelファイルとして `output` フォルダに出力します。
+*   **`integrated_analysis2.py`**: `integrated_analysis.py` の機能を利用し、各分析結果と財務指標データを統合して、最終的な分析結果をExcelファイルとして `output` フォルダに出力します。
 
 ## ディレクトリ構成
 
@@ -37,15 +37,16 @@
 .
 ├── backend/         # データ処理のコアロジック
 │   ├── analysis/    # 各種分析ロジック
-│   ├── jquants/     # J-Quants API関連の処理
+│   ├── config/      # 設定管理（Pydantic Settings）
+│   ├── jquants/     # J-Quants API関連の処理（株価・財務諸表）
 │   ├── master/      # 銘柄マスター関連の処理
-│   └── yfinance/    # yfinance関連の処理
+│   └── utils/       # ユーティリティ（キャッシュ、並列処理等）
 ├── data/            # データベースファイル（.sqlite, .db）を格納
 ├── logs/            # cronジョブの実行ログ
 ├── output/          # 分析結果のExcelファイルやエラーログなどを格納
 ├── notebook/        # (現在未使用)
 ├── scripts/         # 定期実行用のスクリプト群
-├── test/            # テストコード
+├── tests/           # テストコード
 ├── pyproject.toml   # プロジェクトの依存関係定義
 └── README.md        # このファイル
 ```
@@ -55,10 +56,12 @@
 このプロジェクトでは、主に以下のSQLiteデータベースファイルを使用します。
 
 *   **`data/jquants.db`**:
-    *   J-Quants APIから取得した日次株価データ（`daily_quotes`テーブル）や企業情報が格納されます。
-    *   `prices`テーブルも含まれる可能性があります。
-*   **`data/yfinance.db`**:
-    *   yfinanceから取得した企業の属性情報が格納されます。
+    *   J-Quants APIから取得した日次株価データ（`daily_quotes`テーブル）が格納されます。
+*   **`data/statements.db`**:
+    *   J-Quants Statements APIから取得した財務諸表データと、計算済み財務指標が格納されます。
+    *   主なテーブル:
+        *   `financial_statements`: 生の財務諸表データ（売上高、利益、EPS、BPS、キャッシュフロー等）
+        *   `calculated_fundamentals`: 計算済み財務指標（PER、PBR、ROE、ROA、配当利回り等）
 *   **`data/master.db`**:
     *   銘柄マスターデータ（`stocks_master`テーブルなど）が格納されます。
 *   **`data/analysis_results.db`**:
@@ -92,9 +95,10 @@
     ※ `requirements.txt` がない場合は、`pyproject.toml` から生成するか、直接インストールしてください。
 
 4.  **環境変数の設定:**
-    J-Quants APIを利用するために、APIキーなどの設定が必要です。プロジェクトルートに `.env` ファイルを作成し、以下の内容を記述してください。
+    J-Quants APIを利用するために、認証情報の設定が必要です。プロジェクトルートに `.env` ファイルを作成し、以下の内容を記述してください。
     ```
-    JQUANTS_API_KEY="YOUR_API_KEY"
+    EMAIL="your_jquants_email@example.com"
+    PASSWORD="your_jquants_password"
     ```
 
 ## 使用方法
@@ -106,19 +110,26 @@
 *   **J-Quants日次データ取得:**
     J-Quants APIから日次株価データを取得します。
     ```bash
-    python scripts/run_jquants_daily.py
+    python scripts/run_daily_jquants.py
     ```
 
-*   **週次タスク (yfinanceデータ取得 & チャート分類 & 統合分析):**
-    yfinanceから企業属性情報を取得し、チャートパターン分類、統合分析を実行します。
+*   **週次タスク (財務データ取得 & 統合分析):**
+    J-Quants Statements APIから財務諸表データを取得し、財務指標を計算、統合分析を実行します。
     ```bash
+    # 全タスク実行
     python scripts/run_weekly_tasks.py
+
+    # 財務データ取得のみ
+    python scripts/run_weekly_tasks.py --statements-only
+
+    # 統合分析のみ
+    python scripts/run_weekly_tasks.py --analysis-only
     ```
 
 *   **月次マスターデータ更新:**
     銘柄マスターデータを更新します。
     ```bash
-    python scripts/run_master_monthly.py
+    python scripts/run_monthly_master.py
     ```
 
 *   **日次分析フロー:**
@@ -138,13 +149,13 @@
     ```bash
     # サンプル実行（基本的なパターン分析）
     python backend/analysis/chart_classification.py --mode sample
-    
+
     # アダプティブウィンドウのサンプル実行（1200/960日の動的選択をテスト）
     python backend/analysis/chart_classification.py --mode sample-adaptive
-    
+
     # 全銘柄での高性能分析（アダプティブウィンドウ付き）
     python backend/analysis/chart_classification.py --mode full-optimized
-    
+
     # バッチサイズの調整（メモリ使用量の制御）
     python backend/analysis/chart_classification.py --mode full --batch-size 50
     ```
@@ -156,13 +167,13 @@
 **設定例:**
 ```crontab
 # 平日22時にJ-Quantsで株価データを取得
-0 22 * * 1-5 /path/to/python /Users/tak/Markets/Stocks/Stock-Analysis/scripts/run_jquants_daily.py >> /Users/tak/Markets/Stocks/Stock-Analysis/logs/jquants_daily.log 2>&1
+0 22 * * 1-5 /path/to/python /Users/tak/Markets/Stocks/Stock-Analysis/scripts/run_daily_jquants.py >> /Users/tak/Markets/Stocks/Stock-Analysis/logs/jquants_daily.log 2>&1
 
-# 日曜20時に週次タスク（yfinanceデータ取得、チャート分類、統合分析）を実行
+# 日曜20時に週次タスク（財務データ取得、統合分析）を実行
 0 20 * * 0 /path/to/python /Users/tak/Markets/Stocks/Stock-Analysis/scripts/run_weekly_tasks.py >> /Users/tak/Markets/Stocks/Stock-Analysis/logs/weekly_tasks.log 2>&1
 
 # 毎月1日18時にマスターデータを更新
-0 18 1 * * /path/to/python /Users/tak/Markets/Stocks/Stock-Analysis/scripts/run_master_monthly.py >> /Users/tak/Markets/Stocks/Stock-Analysis/logs/master_monthly.log 2>&1
+0 18 1 * * /path/to/python /Users/tak/Markets/Stocks/Stock-Analysis/scripts/run_monthly_master.py >> /Users/tak/Markets/Stocks/Stock-Analysis/logs/master_monthly.log 2>&1
 
 # 平日23時に日次分析フローを実行
 0 23 * * 1-5 /path/to/python /Users/tak/Markets/Stocks/Stock-Analysis/scripts/run_daily_analysis.py >> /Users/tak/Markets/Stocks/Stock-Analysis/logs/daily_analysis.log 2>&1
@@ -176,13 +187,29 @@
 *   pandas: データ操作と分析
 *   numpy: 数値計算
 *   sqlite3: SQLiteデータベース操作
-*   yfinance: Yahoo Financeからのデータ取得
+*   aiohttp: 非同期HTTPリクエスト（J-Quants API用）
 *   requests: HTTPリクエスト
+*   pydantic-settings: 設定管理
 *   backtrader: バックテストフレームワーク（現在未使用の可能性あり）
 *   matplotlib: グラフ描画（チャート分類で使用）
 *   japanize_matplotlib: matplotlibの日本語表示対応（チャート分類で使用）
 *   scipy: 科学技術計算（チャート分類で使用）
 *   scikit-learn: 機械学習（チャート分類で使用）
-*   talib: テクニカル分析ライブラリ（Minerviniで使用、オプション）
 *   pytest: テストフレームワーク
 *   openpyxl: Excelファイルの読み書き
+
+## 計算される財務指標
+
+`data/statements.db` の `calculated_fundamentals` テーブルには、以下の財務指標が計算・格納されます：
+
+| 指標 | 説明 | 計算式 |
+|------|------|--------|
+| PER | 株価収益率 | 株価 / EPS |
+| PBR | 株価純資産倍率 | 株価 / BPS |
+| ROE | 自己資本利益率 | 純利益 / 自己資本 × 100 |
+| ROA | 総資産利益率 | 純利益 / 総資産 × 100 |
+| 配当利回り | | 年間配当 / 株価 × 100 |
+| 時価総額 | | 株価 × 発行済株式数 |
+| 営業利益率 | | 営業利益 / 売上高 × 100 |
+| 純利益率 | | 純利益 / 売上高 × 100 |
+| FCF | フリーキャッシュフロー | 営業CF + 投資CF |

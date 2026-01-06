@@ -1,6 +1,5 @@
 
 import pytest
-import numpy as np
 import pandas as pd
 import sqlite3
 from datetime import datetime, timedelta
@@ -11,11 +10,9 @@ import sys
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from backend.analysis.minervini import (
+from backend.analysis.minervini import (  # noqa: E402
     init_minervini_db,
-    update_minervini_db,
-    MinerviniConfig,
-    MinerviniAnalyzer
+    update_minervini_db
 )
 
 @pytest.fixture

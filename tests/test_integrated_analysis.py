@@ -5,7 +5,6 @@ import sqlite3
 import datetime
 import tempfile
 import os
-from unittest.mock import patch, MagicMock
 
 # Import the functions to test
 import sys

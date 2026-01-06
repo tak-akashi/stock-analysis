@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 import sqlite3
-import sys
-import os
 
 def test_basic_functionality():
     """Test basic database connectivity and data structure"""
@@ -27,19 +25,19 @@ def test_basic_functionality():
             type8_latest_count = cursor.fetchone()[0]
             
             print("=== Function Analysis Results ===")
-            print(f"1. update_rsi_db function status:")
+            print("1. update_rsi_db function status:")
             print(f"   - Total relative_strength records: {rs_total:,}")
             print(f"   - Records with RSI: {rs_with_rsi:,} ({rs_with_rsi/rs_total*100:.2f}%)")
             print(f"   - Latest date (2025-07-10) RSI count: {rsi_latest_count:,}")
-            print(f"   → Function is WORKING but with limited coverage")
+            print("   → Function is WORKING but with limited coverage")
             
-            print(f"\n2. update_type8_by_date function status:")
+            print("\n2. update_type8_by_date function status:")
             print(f"   - Total minervini records: {min_total:,}")
             print(f"   - Records with Type_8: {min_with_type8:,} ({min_with_type8/min_total*100:.2f}%)")
             print(f"   - Latest date (2025-07-10) Type_8 count: {type8_latest_count:,}")
-            print(f"   → Function is WORKING but depends on RSI data")
+            print("   → Function is WORKING but depends on RSI data")
             
-            print(f"\n3. Data flow analysis:")
+            print("\n3. Data flow analysis:")
             print(f"   - RSI available for latest date: {rsi_latest_count:,}")
             print(f"   - Type_8 updated for latest date: {type8_latest_count:,}")
             print(f"   - Conversion rate: {type8_latest_count/rsi_latest_count*100:.1f}%" if rsi_latest_count > 0 else "   - No RSI data to convert")
@@ -54,12 +52,12 @@ def test_basic_functionality():
             """)
             sample_data = cursor.fetchall()
             
-            print(f"\n4. Sample data verification:")
+            print("\n4. Sample data verification:")
             for row in sample_data:
                 rs_date, code, rsi, type8 = row
                 print(f"   Code: {code}, RSI: {rsi:.1f}, Type_8: {type8}")
             
-            print(f"\n=== CONCLUSION ===")
+            print("\n=== CONCLUSION ===")
             if rs_with_rsi > 0 and min_with_type8 > 0:
                 print("✓ Both functions are FUNCTIONING correctly")
                 print("✓ update_rsi_db: Calculating and storing RSI values")

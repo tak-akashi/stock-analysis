@@ -3,10 +3,8 @@ Pytest tests for chart_classification.py
 """
 
 import os
-import sqlite3
 import sys
-from unittest.mock import MagicMock, patch, call
-import argparse # Added for test_main_argparse
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd

@@ -4,7 +4,6 @@ import pandas as pd
 from unittest.mock import patch, MagicMock
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import sqlite3
 import tempfile
 
 # テスト対象のモジュールをインポート

@@ -9,7 +9,7 @@ import sys
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from backend.analysis.high_low_ratio import (
+from backend.analysis.high_low_ratio import (  # noqa: E402
     init_hl_ratio_db,
     calc_hl_ratio_for_all,
     calc_hl_ratio,

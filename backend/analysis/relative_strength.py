@@ -6,13 +6,13 @@ import logging
 import os
 import sys
 from datetime import timedelta
-from typing import List, Tuple, Dict, Optional
+from typing import List, Dict
 
 # Add project root to sys.path for imports
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, project_root)
 
-from backend.utils.parallel_processor import ParallelProcessor, BatchDatabaseProcessor, measure_performance
+from backend.utils.parallel_processor import BatchDatabaseProcessor, measure_performance  # noqa: E402
 
 # --- Constants ---
 JQUANTS_DB_PATH = "/Users/tak/Markets/Stocks/Stock-Analysis/data/jquants.db"
@@ -186,13 +186,6 @@ def init_rsp_db(db_path=JQUANTS_DB_PATH, result_db_path=RESULTS_DB_PATH, n_worke
     
     # Replace empty strings with NaN
     price_data['AdjustmentClose'] = price_data['AdjustmentClose'].replace('', np.nan)
-    
-    # Process stocks in parallel
-    processor = ParallelProcessor(
-        n_workers=n_workers,
-        batch_size=100,
-        show_progress=True
-    )
     
     from functools import partial
     process_func = partial(process_stock_batch_rsp, price_data=price_data)
@@ -436,12 +429,8 @@ def update_rsi_db(result_db_path=RESULTS_DB_PATH, date_list=None, period=-5):
             # Enable optimizations
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("PRAGMA synchronous=NORMAL")
-            
-            # Use UPSERT approach - update existing records
-            placeholders = ','.join(['(?, ?, ?)' for _ in update_records])
-            values = [(r['Date'], r['Code'], r['RelativeStrengthIndex']) for r in update_records]
-            
-            # Create VALUES clause for bulk update
+
+            # Bulk update RSI values
             conn.executemany("""
                 UPDATE relative_strength 
                 SET RelativeStrengthIndex = ?
@@ -454,7 +443,7 @@ def update_rsi_db(result_db_path=RESULTS_DB_PATH, date_list=None, period=-5):
         dates_processed = valid_rsi_data['Date'].nunique()
         stocks_per_date = len(update_records) // dates_processed if dates_processed > 0 else 0
         
-        logger.info(f"RSI update completed successfully:")
+        logger.info("RSI update completed successfully:")
         logger.info(f"  Dates processed: {dates_processed}")
         logger.info(f"  Total records updated: {len(update_records)}")
         logger.info(f"  Average stocks per date: {stocks_per_date}")

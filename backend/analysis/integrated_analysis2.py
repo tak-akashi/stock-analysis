@@ -8,7 +8,7 @@ The script performs the following steps:
 2. Fetches the latest available analysis date.
 3. Retrieves comprehensive analysis data for the latest date.
 4. Retrieves and pivots chart classification data.
-5. Retrieves fundamental data from yfinance.
+5. Retrieves fundamental data from J-Quants Statements API (calculated_fundamentals).
 6. Merges these data sources into a single DataFrame using optimized operations.
 7. Outputs the final combined DataFrame to Excel.
 """
@@ -17,11 +17,10 @@ import sys
 import os
 import sqlite3
 import pandas as pd
-import numpy as np
 import warnings
 import logging
 from datetime import datetime
-from typing import Optional, Dict, List
+from typing import List
 
 # Add project root to sys.path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
@@ -42,7 +41,7 @@ DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 RESULTS_DB_PATH = os.path.join(DATA_DIR, "analysis_results.db")
 MASTER_DB_PATH = os.path.join(DATA_DIR, "master.db")
 JQUANTS_DB_PATH = os.path.join(DATA_DIR, "jquants.db")
-YFINANCE_DB_PATH = os.path.join(DATA_DIR, "yfinance.db")
+STATEMENTS_DB_PATH = os.path.join(DATA_DIR, "statements.db")
 
 
 # --- Setup Functions ---
@@ -153,36 +152,71 @@ def pivot_chart_classification_data(df: pd.DataFrame, logger: logging.Logger) ->
         logger.error(f"Error pivoting chart classification data: {e}")
         return pd.DataFrame()
 
-def get_yfinance_data(db_path: str, logger: logging.Logger) -> pd.DataFrame:
-    """Fetches stock data from the yfinance database with optimized query."""
+def get_fundamentals_data(db_path: str, logger: logging.Logger) -> pd.DataFrame:
+    """Fetches calculated fundamentals data from statements database.
+
+    Data comes from J-Quants Statements API with calculated metrics like PER, PBR, ROE.
+    Column names are mapped for backward compatibility with yfinance-based analysis.
+    """
     try:
         with sqlite3.connect(db_path) as conn:
             # Enable optimizations
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("PRAGMA synchronous=NORMAL")
-            
+
             # Check if table exists first
             table_check = conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='stocks'"
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='calculated_fundamentals'"
             ).fetchone()
-            
+
             if not table_check:
-                logger.warning("stocks table not found in yfinance database")
+                logger.warning("calculated_fundamentals table not found in statements database")
                 return pd.DataFrame()
-            
-            # Optimized query to select only necessary columns if table is large
-            query = "SELECT * FROM stocks"
+
+            # Query with column aliases for backward compatibility
+            query = """
+            SELECT
+                code as Code,
+                company_name as longName,
+                sector_33 as sector,
+                sector_17,
+                market_segment,
+                market_cap as marketCap,
+                per as trailingPE,
+                forward_per as forwardPE,
+                pbr as priceToBook,
+                dividend_yield as dividendYield,
+                roe as returnOnEquity,
+                roa as returnOnAssets,
+                equity_ratio,
+                operating_margin as operatingMargins,
+                profit_margin as profitMargins,
+                eps,
+                bps,
+                dps,
+                total_assets,
+                equity,
+                operating_cf,
+                free_cash_flow as freeCashflow,
+                net_sales,
+                operating_profit,
+                ordinary_profit,
+                profit,
+                payout_ratio,
+                reference_price,
+                reference_date,
+                latest_period,
+                latest_fiscal_year_end,
+                last_updated
+            FROM calculated_fundamentals
+            """
             df = pd.read_sql(query, conn)
-            
-            # Vectorized string operation
-            if 'ticker' in df.columns and not df.empty:
-                df["Code"] = df["ticker"].str.replace(".T", "0", regex=False)
-                
-        logger.info(f"Retrieved {len(df)} yfinance records")
+
+        logger.info(f"Retrieved {len(df)} fundamentals records")
         return df
-        
+
     except Exception as e:
-        logger.error(f"Error fetching yfinance data: {e}")
+        logger.error(f"Error fetching fundamentals data: {e}")
         return pd.DataFrame()
 
 
@@ -228,9 +262,9 @@ def main(target_date=None):
         chart_df = get_chart_classification_data(RESULTS_DB_PATH, logger)
         pivot_df = pivot_chart_classification_data(chart_df, logger)
         
-        # 3. Get yfinance data
-        logger.info("Fetching yfinance data...")
-        yfinance_df = get_yfinance_data(YFINANCE_DB_PATH, logger)
+        # 3. Get fundamentals data (from J-Quants Statements)
+        logger.info("Fetching fundamentals data...")
+        fundamentals_df = get_fundamentals_data(STATEMENTS_DB_PATH, logger)
 
         # 4. Optimized merge operations
         logger.info("Performing optimized data merging...")
@@ -244,18 +278,19 @@ def main(target_date=None):
             all_df = pd.merge(all_df, comprehensive_df, on='Code', how='left')
             logger.info(f"Merged with comprehensive analysis data: {len(all_df)} rows")
         
-        # Merge with yfinance data if available
-        if not yfinance_df.empty:
-            all_df = pd.merge(all_df, yfinance_df, on='Code', how='left')
-            logger.info(f"Merged with yfinance data: {len(all_df)} rows")
+        # Merge with fundamentals data if available
+        if not fundamentals_df.empty:
+            all_df = pd.merge(all_df, fundamentals_df, on='Code', how='left')
+            logger.info(f"Merged with fundamentals data: {len(all_df)} rows")
               
         # 5. Optimized column reordering and sorting
         logger.info("Optimizing final dataframe structure...")
         
         # Priority columns for reordering (most important first)
         priority_columns = [
-            'Code', 'ticker', 'shortName', 'longName','sector', 'industry', 'marketCap',
-            'composite_score', 'HlRatio', 'RelativeStrengthIndex', 'minervini_score', 
+            'Code', 'longName', 'sector', 'sector_17', 'market_segment', 'marketCap',
+            'composite_score', 'HlRatio', 'RelativeStrengthIndex', 'minervini_score',
+            'trailingPE', 'priceToBook', 'dividendYield', 'returnOnEquity', 'returnOnAssets',
         ]
         
         # Additional columns in logical order

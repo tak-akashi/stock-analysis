@@ -39,6 +39,7 @@ class PathSettings(BaseSettings):
     analysis_db: Optional[Path] = None
     yfinance_db: Optional[Path] = None
     master_db: Optional[Path] = None
+    statements_db: Optional[Path] = None
 
     @model_validator(mode="after")
     def set_computed_paths(self) -> "PathSettings":
@@ -57,6 +58,8 @@ class PathSettings(BaseSettings):
             self.yfinance_db = self.data_dir / "yfinance.db"
         if self.master_db is None:
             self.master_db = self.data_dir / "master.db"
+        if self.statements_db is None:
+            self.statements_db = self.data_dir / "statements.db"
         return self
 
 

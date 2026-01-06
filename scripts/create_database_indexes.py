@@ -14,7 +14,7 @@ from typing import Dict, List, Tuple
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from backend.utils.parallel_processor import BatchDatabaseProcessor
+from backend.utils.parallel_processor import BatchDatabaseProcessor  # noqa: E402
 
 
 def setup_logging():

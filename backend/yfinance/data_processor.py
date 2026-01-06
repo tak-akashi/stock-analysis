@@ -230,7 +230,7 @@ def fetch_and_store_tse_data(
 
     try:
         df = pd.read_excel(file_path, header=0)
-        df = df[df["市場・商品区分"].str.contains("ETF") == False]
+        df = df[~df["市場・商品区分"].str.contains("ETF")]
         df.rename(
             columns={"コード": "symbol", "銘柄名": "name", "33業種区分": "sector"},
             inplace=True,

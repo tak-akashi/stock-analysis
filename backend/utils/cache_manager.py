@@ -12,7 +12,6 @@ from typing import Any, Optional, Dict, Callable
 from datetime import datetime, timedelta
 from pathlib import Path
 import pandas as pd
-import numpy as np
 
 
 logger = logging.getLogger(__name__)

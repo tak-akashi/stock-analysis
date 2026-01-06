@@ -12,7 +12,7 @@ from datetime import datetime
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from backend.master.master_db import StockMasterDB
+from backend.master.master_db import StockMasterDB  # noqa: E402
 
 def main():
     """月次マスターデータ更新処理"""

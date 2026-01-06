@@ -7,9 +7,6 @@ comprehensive stock analysis across all indicators.
 
 import sys
 import os
-import pandas as pd
-import sqlite3
-from datetime import datetime, timedelta
 
 # Add the analysis directory to the path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -141,7 +138,7 @@ def demo_filtering_stocks(sample_date="2023-12-01"):
 
 def demo_multi_date_analysis():
     """Demonstrate multi-date time series analysis"""
-    print(f"\n=== Multi-Date Time Series Analysis ===")
+    print("\n=== Multi-Date Time Series Analysis ===")
     
     try:
         # Try to find a date range with data

@@ -3,20 +3,20 @@ import logging
 import os
 import sys
 from datetime import datetime, timedelta
-from typing import Optional, Tuple, List
+from typing import Optional, List
 
 # Add project root to sys.path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
 # Import optimized functions
-from backend.analysis.high_low_ratio import calc_hl_ratio_for_all, init_hl_ratio_db
-from backend.analysis.minervini import update_minervini_db, update_type8_db, init_minervini_db
+from backend.analysis.high_low_ratio import calc_hl_ratio_for_all, init_hl_ratio_db  # noqa: E402
+from backend.analysis.minervini import update_minervini_db, update_type8_db, init_minervini_db  # noqa: E402
 # Removed dependency on old minervini module
-from backend.analysis.relative_strength import update_rsp_db, update_rsi_db, init_rsp_db, init_results_db
-from backend.analysis.integrated_analysis import create_analysis_summary
-from backend.analysis.chart_classification import main_full_run as run_chart_classification_full
-from backend.utils.parallel_processor import measure_performance
+from backend.analysis.relative_strength import update_rsp_db, update_rsi_db, init_rsp_db  # noqa: E402
+from backend.analysis.integrated_analysis import create_analysis_summary  # noqa: E402
+from backend.analysis.chart_classification import main_full_run as run_chart_classification_full  # noqa: E402
+from backend.utils.parallel_processor import measure_performance  # noqa: E402
 
 
 class DatabaseManager:

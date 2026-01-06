@@ -11,7 +11,7 @@ from unittest.mock import patch, MagicMock
 import sys
 sys.path.append('/Users/tak/Markets/Stocks/Stock-Analysis/backend/analysis')
 
-from relative_strength import (
+from relative_strength import (  # noqa: E402
     fill_non_vals,
     relative_strength_percentage,
     init_rsp_db,
@@ -185,7 +185,7 @@ class TestRelativeStrength:
         mock_logger = MagicMock()
         mock_setup_logging.return_value = mock_logger
         
-        with patch('pandas.DataFrame.to_csv') as mock_to_csv:
+        with patch('pandas.DataFrame.to_csv'):
             processed, errors = init_rsp_db(temp_database, temp_results_database)
             
             assert isinstance(processed, int)
@@ -241,9 +241,9 @@ class TestRelativeStrength:
         # Initialize the results database first
         init_results_db(temp_results_database)
         
-        with patch('pandas.DataFrame.to_csv') as mock_to_csv:
+        with patch('pandas.DataFrame.to_csv'):
             processed, errors = update_rsp_db(
-                temp_database, 
+                temp_database,
                 temp_results_database,
                 calc_start_date='2023-01-01',
                 calc_end_date='2023-12-31'

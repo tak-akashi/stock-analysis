@@ -3,7 +3,6 @@
 
 import sqlite3
 import sys
-import os
 
 # Add backend to path
 sys.path.append('/Users/tak/Markets/Stocks/Stock-Analysis/backend')
@@ -63,9 +62,9 @@ def test_fixed_functions():
                 print(f"  Code: {code}, RSI: {rsi:.1f}, Type_8: {type8}")
             
             if type8_after > type8_before:
-                print(f"\n✓ Fix SUCCESSFUL: Improved Type_8 coverage")
+                print("\n✓ Fix SUCCESSFUL: Improved Type_8 coverage")
             else:
-                print(f"\n! Fix needs more work: No improvement seen")
+                print("\n! Fix needs more work: No improvement seen")
                 
     except Exception as e:
         print(f"Error during testing: {e}")

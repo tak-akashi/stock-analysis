@@ -7,13 +7,13 @@ import os
 import sys
 import time
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Add project root to sys.path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
-from backend.analysis.relative_strength import update_rsi_db
+from backend.analysis.relative_strength import update_rsi_db  # noqa: E402
 
 def setup_logging():
     """Setup logging for the test"""

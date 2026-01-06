@@ -4,9 +4,7 @@ Test script to verify update_rsi_db and update_type8_by_date functions
 """
 
 import sys
-import os
 import sqlite3
-from datetime import datetime, timedelta
 
 # Add backend to path
 sys.path.append('/Users/tak/Markets/Stocks/Stock-Analysis/backend')
@@ -107,7 +105,7 @@ def main():
         _, _, final_rsi, final_type8 = check_database_status()
         print(f"Type_8 count changed from {initial_type8} to {final_type8}")
         
-        print(f"\n=== Summary ===")
+        print("\n=== Summary ===")
         print(f"RSI update: {'SUCCESS' if rsi_success else 'FAILED'}")
         print(f"Type_8 update: {'SUCCESS' if type8_success else 'FAILED'}")
     else:

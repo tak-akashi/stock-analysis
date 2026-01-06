@@ -3,8 +3,7 @@ import datetime
 import logging
 import os
 import pandas as pd
-import numpy as np
-from typing import Optional, List, Dict, Union
+from typing import Optional, Dict, Union
 
 # --- Constants ---
 DATA_DIR = "/Users/tak/Markets/Stocks/Stock-Analysis/data"
@@ -390,7 +389,7 @@ def check_database_coverage(db_path: str = RESULTS_DB_PATH) -> Dict[str, int]:
             coverage[f'{table}_dates'] = int(row['date_count'])
             coverage[f'{table}_codes'] = int(row['code_count'])
         
-        logger.info(f"Database coverage check completed using optimized query")
+        logger.info("Database coverage check completed using optimized query")
         return coverage
         
     except sqlite3.Error as e:

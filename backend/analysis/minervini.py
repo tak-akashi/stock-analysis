@@ -5,9 +5,9 @@ import logging
 import sqlite3
 import warnings
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Tuple, Union, Dict
+from typing import List, Optional, Dict
 
 import numpy as np
 import pandas as pd
@@ -17,7 +17,7 @@ from functools import partial
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, project_root)
 
-from backend.utils.parallel_processor import ParallelProcessor, BatchDatabaseProcessor, measure_performance
+from backend.utils.parallel_processor import BatchDatabaseProcessor, measure_performance  # noqa: E402
 
 try:
     import talib
@@ -243,7 +243,6 @@ class MinerviniDatabase:
         price_data['AdjustmentClose'] = price_data['AdjustmentClose'].replace('', np.nan)
         
         # Process stocks in parallel
-        from functools import partial
         process_func = partial(process_stock_batch_minervini, price_data=price_data)
         
         # Process in batches
@@ -314,7 +313,6 @@ class MinerviniDatabase:
         price_data['AdjustmentClose'] = price_data['AdjustmentClose'].replace('', np.nan)
         
         # Process stocks in parallel
-        from functools import partial
         process_func = partial(process_stock_batch_minervini, price_data=price_data)
         
         # Process in batches
@@ -440,7 +438,7 @@ class MinerviniDatabase:
             dates_processed = valid_data['Date'].nunique()
             records_per_date = len(update_records) // dates_processed if dates_processed > 0 else 0
             
-            self.logger.info(f"Type_8 update completed successfully:")
+            self.logger.info("Type_8 update completed successfully:")
             self.logger.info(f"  Dates processed: {dates_processed}")
             self.logger.info(f"  Total records updated: {len(update_records)}")
             self.logger.info(f"  Average records per date: {records_per_date}")

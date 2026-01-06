@@ -11,7 +11,7 @@ import sys
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, project_root)
 
-from backend.utils.parallel_processor import ParallelProcessor, BatchDatabaseProcessor, measure_performance
+from backend.utils.parallel_processor import BatchDatabaseProcessor, measure_performance  # noqa: E402
 
 # --- Constants ---
 JQUANTS_DB_PATH = "/Users/tak/Markets/Stocks/Stock-Analysis/data/jquants.db"
@@ -213,13 +213,6 @@ def calc_hl_ratio_for_all(db_path=JQUANTS_DB_PATH, end_date=None, weeks=52, n_wo
     
     logger.info(f"Processing {len(code_list)} stocks for HL Ratio using parallel processing.")
 
-    # Initialize parallel processor
-    processor = ParallelProcessor(
-        n_workers=n_workers,
-        batch_size=100,  # Process 100 stocks per batch
-        show_progress=True
-    )
-    
     # Process stocks in parallel
     from functools import partial
     process_func = partial(process_stock_batch, price_data=price_df, weeks=weeks)

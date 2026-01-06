@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """
-週次属性情報取得スクリプト（yfinance）
+週次財務データ取得スクリプト（J-Quants Statements API）
 cronから実行される週次タスク
+
+yfinanceから J-Quants Statements API に移行
 """
 
 import argparse
+import logging
 import subprocess
 import sys
 from datetime import datetime
@@ -14,15 +17,44 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from backend.config import get_settings
-from backend.yfinance.data_processor import TSEDataProcessor
+from backend.config import get_settings  # noqa: E402
+
+
+class ColoredFormatter(logging.Formatter):
+    """カラー付きログフォーマッター"""
+
+    COLORS = {
+        'DEBUG': '\033[36m',    # シアン
+        'INFO': '\033[32m',     # 緑
+        'WARNING': '\033[33m',  # 黄
+        'ERROR': '\033[31m',    # 赤
+        'CRITICAL': '\033[35m', # マゼンタ
+    }
+    RESET = '\033[0m'
+
+    def format(self, record):
+        color = self.COLORS.get(record.levelname, '')
+        record.levelname = f"{color}{record.levelname}{self.RESET}"
+        return super().format(record)
+
+
+def setup_logging():
+    """ログ設定 - バックエンドモジュールのログをカラー表示"""
+    handler = logging.StreamHandler()
+    handler.setFormatter(ColoredFormatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    ))
+    logging.basicConfig(
+        level=logging.INFO,
+        handlers=[handler]
+    )
 
 
 def parse_args():
     """コマンドライン引数の解析"""
-    parser = argparse.ArgumentParser(description="週次属性情報取得スクリプト")
+    parser = argparse.ArgumentParser(description="週次財務データ取得スクリプト")
     parser.add_argument(
-        "--yfinance-only", action="store_true", help="yfinanceデータ取得のみ実行"
+        "--statements-only", action="store_true", help="財務諸表データ取得のみ実行"
     )
     parser.add_argument(
         "--analysis-only", action="store_true", help="統合分析のみ実行"
@@ -31,34 +63,53 @@ def parse_args():
 
 
 def main():
-    """週次属性情報取得処理"""
+    """週次財務データ取得処理"""
+    setup_logging()
     args = parse_args()
     settings = get_settings()
 
     # オプション競合チェック
-    if sum([args.yfinance_only, args.analysis_only]) > 1:
-        print("エラー: --yfinance-only, --analysis-only は同時に指定できません")
+    if sum([args.statements_only, args.analysis_only]) > 1:
+        print("エラー: --statements-only, --analysis-only は同時に指定できません")
         sys.exit(1)
 
     # デフォルトは全て実行
-    run_yfinance = not (args.analysis_only)
-    run_analysis = not (args.yfinance_only)
+    run_statements = not (args.analysis_only)
+    run_analysis = not (args.statements_only)
 
     print(f"=== 週次タスク開始 {datetime.now()} ===")
 
     try:
-        if run_yfinance:
-            print(f"=== yfinanceデータ取得開始 {datetime.now()} ===")
+        if run_statements:
+            print(f"=== J-Quants Statements データ取得開始 {datetime.now()} ===")
             print(
-                f"    設定: max_workers={settings.yfinance.max_workers}, "
-                f"rate_limit_delay={settings.yfinance.rate_limit_delay}s"
+                f"    設定: max_concurrent_requests={settings.jquants.max_concurrent_requests}, "
+                f"batch_size={settings.jquants.batch_size}, "
+                f"request_delay={settings.jquants.request_delay}s"
             )
-            processor = TSEDataProcessor(
-                max_workers=settings.yfinance.max_workers,
-                rate_limit_delay=settings.yfinance.rate_limit_delay,
+
+            # 1. 財務諸表データを取得
+            from backend.jquants.statements_processor import JQuantsStatementsProcessor
+
+            processor = JQuantsStatementsProcessor(
+                max_concurrent_requests=settings.jquants.max_concurrent_requests,
+                batch_size=settings.jquants.batch_size,
+                request_delay=settings.jquants.request_delay,
             )
-            processor.run()
-            print(f"=== yfinanceデータ取得完了 {datetime.now()} ===")
+            processor.get_all_statements(str(settings.paths.statements_db))
+            print(f"=== 財務諸表データ取得完了 {datetime.now()} ===")
+
+            # 2. 財務指標を計算
+            print(f"=== 財務指標計算開始 {datetime.now()} ===")
+            from backend.jquants.fundamentals_calculator import FundamentalsCalculator
+
+            calculator = FundamentalsCalculator(
+                statements_db_path=str(settings.paths.statements_db),
+                jquants_db_path=str(settings.paths.jquants_db),
+            )
+            processed = calculator.update_all_fundamentals(str(settings.paths.statements_db))
+            print(f"    {processed} 銘柄の財務指標を計算しました")
+            print(f"=== 財務指標計算完了 {datetime.now()} ===")
 
         if run_analysis:
             print(f"=== 統合分析処理開始 {datetime.now()} ===")
@@ -72,6 +123,8 @@ def main():
 
     except Exception as e:
         print(f"エラーが発生しました: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 

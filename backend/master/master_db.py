@@ -11,7 +11,7 @@ import requests
 from datetime import datetime
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 import logging
 
 # ログ設定
@@ -113,7 +113,7 @@ class StockMasterDB:
             df = pd.read_excel(file_path, header=0)
             
             # ETFを除外
-            df = df[df['市場・商品区分'].str.contains('ETF') == False]
+            df = df[~df['市場・商品区分'].str.contains('ETF')]
             
             # 必要な列のみ選択・リネーム
             df = df[['コード', '銘柄名', '市場・商品区分', '33業種区分']].copy()
@@ -339,23 +339,23 @@ def main():
             
             # 統計情報の表示
             stats = master_db.get_statistics()
-            print(f"\n=== 統計情報 ===")
+            print("\n=== 統計情報 ===")
             print(f"総銘柄数: {stats['total_stocks']}")
             print(f"アクティブ銘柄数: {stats['active_stocks']}")
             print(f"非アクティブ銘柄数: {stats['inactive_stocks']}")
             print(f"最終更新: {stats['last_updated']}")
             
-            print(f"\n=== 市場別分布 ===")
+            print("\n=== 市場別分布 ===")
             for market, count in stats['market_distribution'].items():
                 print(f"{market}: {count}銘柄")
             
-            print(f"\n=== 業種別分布（上位10業種） ===")
+            print("\n=== 業種別分布（上位10業種） ===")
             sorted_sectors = sorted(stats['sector_distribution'].items(), key=lambda x: x[1], reverse=True)
             for sector, count in sorted_sectors[:10]:
                 print(f"{sector}: {count}銘柄")
             
             # サンプルデータの表示
-            print(f"\n=== サンプルデータ ===")
+            print("\n=== サンプルデータ ===")
             sample_stocks = master_db.get_all_stocks().head()
             print(sample_stocks[['code', 'name', 'sector', 'market']].to_string(index=False))
             

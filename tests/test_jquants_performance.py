@@ -14,7 +14,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from backend.jquants.data_processor import JQuantsDataProcessor
+from backend.jquants.data_processor import JQuantsDataProcessor  # noqa: E402
 
 
 def setup_logging():
@@ -47,7 +47,7 @@ def test_performance(test_codes: list, days_back: int = 30):
     
     # Create temporary database
     with tempfile.TemporaryDirectory() as temp_dir:
-        test_db = os.path.join(temp_dir, "test.db")
+        _test_db = os.path.join(temp_dir, "test.db")  # noqa: F841
         
         try:
             # Test with different configurations
@@ -116,7 +116,7 @@ def test_performance(test_codes: list, days_back: int = 30):
             logger.info("=" * 60)
             logger.info("PERFORMANCE COMPARISON")
             logger.info("=" * 60)
-            logger.info(f"Test configuration:")
+            logger.info("Test configuration:")
             logger.info(f"  Stock codes: {len(test_codes)}")
             logger.info(f"  Date range: {from_date} to {to_date}")
             logger.info("")
@@ -131,7 +131,7 @@ def test_performance(test_codes: list, days_back: int = 30):
                 logger.info(f"  Codes/sec: {result['codes_per_second']:.2f}")
                 logger.info(f"  Records/sec: {result['records_per_second']:.2f}")
                 if result['config'] == best_config['config']:
-                    logger.info(f"  ⭐ FASTEST")
+                    logger.info("  ⭐ FASTEST")
                 else:
                     logger.info(f"  {speedup_vs_best:.2f}x slower than {best_config['config']}")
                 logger.info("")
@@ -240,7 +240,7 @@ def test_error_recovery(test_codes: list):
         successful = sum(1 for _, df in results if not df.empty)
         failed = len(test_codes_with_errors) - successful
         
-        logger.info(f"Error recovery test results:")
+        logger.info("Error recovery test results:")
         logger.info(f"  Total codes: {len(test_codes_with_errors)}")
         logger.info(f"  Successful: {successful}")
         logger.info(f"  Failed: {failed}")

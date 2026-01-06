@@ -7,18 +7,15 @@ import sqlite3
 import os
 import tempfile
 import shutil
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 import pandas as pd
-from datetime import datetime
 
 from backend.yfinance.data_processor import (
     init_db,
     save_stock_info_to_db,
     download_tse_listed_stocks,
     fetch_and_store_tse_data,
-    TSEDataProcessor,
-    DATA_DIR,
-    DB_PATH
+    TSEDataProcessor
 )
 
 
