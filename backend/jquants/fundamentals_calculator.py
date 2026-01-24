@@ -24,16 +24,22 @@ class FundamentalsCalculator:
     Combines statement data with price data from jquants.db.
     """
 
-    def __init__(self, statements_db_path: str, jquants_db_path: str):
+    def __init__(self, statements_db_path: str, jquants_db_path: str, master_db_path: str = None):
         """
         Initialize the fundamentals calculator.
 
         Args:
             statements_db_path: Path to statements.db (financial_statements table)
             jquants_db_path: Path to jquants.db (daily_quotes table)
+            master_db_path: Path to master.db (stocks_master table). If None, inferred from jquants_db_path.
         """
         self.statements_db_path = statements_db_path
         self.jquants_db_path = jquants_db_path
+        # Infer master_db_path from jquants_db_path if not provided
+        if master_db_path is None:
+            data_dir = Path(jquants_db_path).parent
+            master_db_path = str(data_dir / "master.db")
+        self.master_db_path = master_db_path
         self.logger = logging.getLogger(__name__)
         self.cache = get_cache()
 
@@ -166,12 +172,55 @@ class FundamentalsCalculator:
             self.logger.error(f"Error getting batch statements: {e}")
             return pd.DataFrame()
 
-    def get_listed_info_cached(self) -> pd.DataFrame:
+    def get_shares_for_codes(self, codes: list) -> Dict[str, float]:
         """
-        Get listed company info from cache.
+        Get number_of_shares from historical data for codes missing this value.
+
+        For each code, finds the most recent non-null number_of_shares value
+        from any statement (FY or quarterly).
+
+        Args:
+            codes: List of stock codes to look up
 
         Returns:
-            DataFrame with company info (Code, CompanyName, Sector33Code, Sector17Code, MarketCode)
+            Dictionary mapping code to number_of_shares
+        """
+        if not codes:
+            return {}
+
+        try:
+            with sqlite3.connect(self.statements_db_path) as conn:
+                placeholders = ','.join(['?' for _ in codes])
+                query = f"""
+                WITH ranked_shares AS (
+                    SELECT
+                        local_code,
+                        number_of_shares,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY local_code
+                            ORDER BY disclosed_date DESC
+                        ) as rn
+                    FROM financial_statements
+                    WHERE local_code IN ({placeholders})
+                      AND number_of_shares IS NOT NULL
+                      AND number_of_shares != ''
+                )
+                SELECT local_code, number_of_shares
+                FROM ranked_shares
+                WHERE rn = 1
+                """
+                result = conn.execute(query, codes).fetchall()
+                return {row[0]: float(row[1]) for row in result if row[1]}
+        except Exception as e:
+            self.logger.error(f"Error getting shares for codes: {e}")
+            return {}
+
+    def get_listed_info_cached(self) -> pd.DataFrame:
+        """
+        Get listed company info from cache, falling back to master.db.
+
+        Returns:
+            DataFrame with company info (Code, CompanyName, Sector33CodeName, Sector17CodeName, MarketCodeName)
         """
         cache_key = "jquants_listed_info"
         cached_data = self.cache.get(cache_key)
@@ -179,8 +228,37 @@ class FundamentalsCalculator:
         if cached_data is not None:
             return pd.DataFrame(cached_data)
 
-        self.logger.warning("Listed info not in cache - run JQuantsStatementsProcessor first")
-        return pd.DataFrame()
+        # Fallback: load from master.db
+        self.logger.info("Listed info not in cache - loading from master.db")
+        return self._get_listed_info_from_master()
+
+    def _get_listed_info_from_master(self) -> pd.DataFrame:
+        """
+        Get listed company info directly from master.db.
+
+        Note: master.db uses 4-digit codes, we convert to 5-digit (append '0').
+
+        Returns:
+            DataFrame with company info
+        """
+        try:
+            with sqlite3.connect(self.master_db_path) as conn:
+                query = """
+                SELECT
+                    code || '0' as Code,
+                    name as CompanyName,
+                    sector as Sector33CodeName,
+                    sector as Sector17CodeName,
+                    market as MarketCodeName
+                FROM stocks_master
+                WHERE is_active = 1
+                """
+                df = pd.read_sql(query, conn)
+                self.logger.info(f"Loaded {len(df)} records from master.db")
+                return df
+        except Exception as e:
+            self.logger.error(f"Error loading from master.db: {e}")
+            return pd.DataFrame()
 
     @staticmethod
     def _to_float(value) -> Optional[float]:
@@ -487,6 +565,19 @@ class FundamentalsCalculator:
         statements_df = self.get_all_latest_statements()
         self.logger.info(f"Got statements for {len(statements_df)} stocks")
 
+        # Find codes with missing number_of_shares and fetch from historical data
+        missing_shares_codes = []
+        for _, row in statements_df.iterrows():
+            shares = self._to_float(row.get('number_of_shares'))
+            if shares is None:
+                missing_shares_codes.append(row['local_code'])
+
+        shares_lookup = {}
+        if missing_shares_codes:
+            self.logger.info(f"Fetching historical shares data for {len(missing_shares_codes)} codes with missing number_of_shares...")
+            shares_lookup = self.get_shares_for_codes(missing_shares_codes)
+            self.logger.info(f"Found historical shares data for {len(shares_lookup)} codes")
+
         self.logger.info("Fetching listed info...")
         listed_info_df = self.get_listed_info_cached()
         # Create lookup dict
@@ -500,6 +591,7 @@ class FundamentalsCalculator:
         results = []
         processed = 0
         skipped_no_price = 0
+        shares_supplemented_count = 0
 
         for _, row in statements_df.iterrows():
             code = row['local_code']
@@ -517,10 +609,19 @@ class FundamentalsCalculator:
             # Get listed info
             listed_info = listed_info_dict.get(code)
 
+            # Convert row to dict for modification
+            statement_dict = row.to_dict()
+
+            #補完: number_of_shares がNULLの場合、過去のデータから取得
+            current_shares = self._to_float(statement_dict.get('number_of_shares'))
+            if current_shares is None and code in shares_lookup:
+                statement_dict['number_of_shares'] = shares_lookup[code]
+                shares_supplemented_count += 1
+
             # Calculate fundamentals
             fundamentals = self.calculate_all_fundamentals(
                 code=code,
-                statement=row.to_dict(),
+                statement=statement_dict,
                 price=price,
                 price_date=price_date,
                 listed_info=listed_info
@@ -529,6 +630,7 @@ class FundamentalsCalculator:
             processed += 1
 
         self.logger.info(f"Calculated fundamentals for {processed} stocks (skipped {skipped_no_price} with no price)")
+        self.logger.info(f"Supplemented number_of_shares from historical data for {shares_supplemented_count} stocks")
 
         # Save to database
         if results:

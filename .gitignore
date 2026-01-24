@@ -246,6 +246,7 @@ temp/*
 **/_old/
 
 CLAUDE.md
+.claude/
 
 output/*
 !output/.gitkeep
