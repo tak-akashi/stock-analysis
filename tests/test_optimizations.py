@@ -18,12 +18,12 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
 # Import original implementations (from _old folder)
-from backend.analysis._old import high_low_ratio as high_low_ratio_old, relative_strength as relative_strength_old  # noqa: E402
+from core.analysis._old import high_low_ratio as high_low_ratio_old, relative_strength as relative_strength_old  # noqa: E402
 
 # Import current implementations (previously optimized)
-from backend.analysis import high_low_ratio, relative_strength  # noqa: E402
+from core.analysis import high_low_ratio, relative_strength  # noqa: E402
 
-from backend.utils.parallel_processor import measure_performance  # noqa: E402
+from core.utils.parallel_processor import measure_performance  # noqa: E402
 
 
 def setup_logging():

@@ -17,7 +17,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from backend.config import get_settings  # noqa: E402
+from core.config import get_settings  # noqa: E402
 
 
 class ColoredFormatter(logging.Formatter):
@@ -89,7 +89,7 @@ def main():
             )
 
             # 1. 財務諸表データを取得
-            from backend.jquants.statements_processor import JQuantsStatementsProcessor
+            from core.jquants.statements_processor import JQuantsStatementsProcessor
 
             processor = JQuantsStatementsProcessor(
                 max_concurrent_requests=settings.jquants.max_concurrent_requests,
@@ -101,7 +101,7 @@ def main():
 
             # 2. 財務指標を計算
             print(f"=== 財務指標計算開始 {datetime.now()} ===")
-            from backend.jquants.fundamentals_calculator import FundamentalsCalculator
+            from core.jquants.fundamentals_calculator import FundamentalsCalculator
 
             calculator = FundamentalsCalculator(
                 statements_db_path=str(settings.paths.statements_db),

@@ -10,7 +10,7 @@ import sys
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from backend.analysis.minervini import (  # noqa: E402
+from core.analysis.minervini import (  # noqa: E402
     init_minervini_db,
     update_minervini_db
 )

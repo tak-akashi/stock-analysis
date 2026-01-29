@@ -12,7 +12,7 @@ from datetime import datetime
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from backend.jquants.data_processor import JQuantsDataProcessor
+from core.jquants.data_processor import JQuantsDataProcessor
 
 def main():
     """日次株価データ取得処理"""

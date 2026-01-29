@@ -7,7 +7,7 @@ from dateutil.relativedelta import relativedelta
 import tempfile
 
 # テスト対象のモジュールをインポート
-from backend.jquants.data_processor import JQuantsDataProcessor
+from core.jquants.data_processor import JQuantsDataProcessor
 
 # テスト用の固定値を設定
 TEST_REFRESH_TOKEN = "test_refresh_token"
@@ -146,7 +146,7 @@ def test_main_saves_to_db(mock_sleep, processor, mock_requests):
                 return os.path.join(*args)
 
             with patch('backend.jquants.data_processor.os.path.join', side_effect=mock_path_join):
-                from backend.jquants.data_processor import main
+                from core.jquants.data_processor import main
                 main()
 
                 # データベースが作成されたか確認
