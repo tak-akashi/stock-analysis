@@ -14,7 +14,7 @@ from datetime import datetime
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
-from backend.analysis.minervini import MinerviniConfig, MinerviniDatabase  # noqa: E402
+from core.analysis.minervini import MinerviniConfig, MinerviniDatabase  # noqa: E402
 
 def setup_logging():
     """Setup logging for the test"""

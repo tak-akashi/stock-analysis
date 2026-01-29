@@ -9,7 +9,7 @@ import tempfile
 from unittest.mock import patch, MagicMock
 
 # テスト対象のモジュールをインポート
-from backend.jquants.statements_processor import JQuantsStatementsProcessor
+from core.jquants.statements_processor import JQuantsStatementsProcessor
 
 # テスト用の固定値を設定
 TEST_REFRESH_TOKEN = "test_refresh_token"

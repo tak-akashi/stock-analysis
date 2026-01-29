@@ -1,0 +1,266 @@
+# アーキテクチャ設計書
+
+## 概要
+
+Stock-Analysisは、日本株式市場データの自動収集・分析システムです。J-Quants APIを利用して日次株価、財務諸表、マスターデータを収集し、複数の分析戦略（Minervini、HL比率、相対力、チャートパターン分類）を実行します。
+
+## システム全体像
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            外部データソース                                   │
+├───────────────────────┬─────────────────────────┬───────────────────────────┤
+│    J-Quants API       │  J-Quants Statements    │     Master Data API       │
+│   (日次株価四本値)      │  (財務諸表データ)         │    (銘柄マスター)           │
+└───────────┬───────────┴────────────┬────────────┴─────────────┬─────────────┘
+            │                        │                          │
+            ▼                        ▼                          ▼
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                          データ収集レイヤー                                    │
+│  ┌─────────────────────┐ ┌─────────────────────┐ ┌─────────────────────────┐ │
+│  │ run_daily_jquants   │ │ run_weekly_tasks    │ │ run_monthly_master      │ │
+│  │ (平日 22:00)         │ │ (日曜 20:00)         │ │ (毎月1日 18:00)          │ │
+│  └─────────┬───────────┘ └─────────┬───────────┘ └───────────┬─────────────┘ │
+└────────────┼───────────────────────┼─────────────────────────┼───────────────┘
+             │                       │                         │
+             ▼                       ▼                         ▼
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                           データストレージ (SQLite)                            │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌──────────────┐ ┌────────────────┐ │
+│  │  jquants.db     │ │  statements.db  │ │  master.db   │ │analysis_results│ │
+│  │  (820MB)        │ │  (30MB)         │ │  (964KB)     │ │   .db (1.7GB)  │ │
+│  │  daily_quotes   │ │  financial_     │ │ stocks_master│ │ hl_ratio,      │ │
+│  │                 │ │  statements     │ │              │ │ minervini,     │ │
+│  │                 │ │  calculated_    │ │              │ │ relative_      │ │
+│  │                 │ │  fundamentals   │ │              │ │ strength, etc  │ │
+│  └────────┬────────┘ └────────┬────────┘ └──────────────┘ └───────┬────────┘ │
+└───────────┼────────────────────┼──────────────────────────────────┼──────────┘
+            │                    │                                  ▲
+            └────────────────────┼──────────────────────────────────┘
+                                 ▼
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                             分析レイヤー                                      │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │                    run_daily_analysis.py (平日 23:00)                  │  │
+│  │  ┌──────────────┐ ┌────────────────┐ ┌──────────────────────────────┐ │  │
+│  │  │ minervini.py │ │ high_low_ratio │ │ relative_strength.py         │ │  │
+│  │  │ トレンド選別   │ │   HL比率計算    │ │ RSP/RSI計算                   │ │  │
+│  │  └──────────────┘ └────────────────┘ └──────────────────────────────┘ │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │            chart_classification.py (MLベースチャートパターン分類)        │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                            統合・出力レイヤー                                  │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │  integrated_analysis.py       │  integrated_analysis2.py              │  │
+│  │  複数指標のSQL統合            │  Excel出力生成                         │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                 │                                            │
+│                                 ▼                                            │
+│                    ┌─────────────────────────┐                              │
+│                    │ output/*.xlsx            │                              │
+│                    │ analysis_YYYY-MM-DD.xlsx │                              │
+│                    └─────────────────────────┘                              │
+└───────────────────────────────────────────────────────────────────────────────┘
+```
+
+## レイヤー構成
+
+### 1. データ収集レイヤー (`scripts/`)
+
+| スクリプト | 実行タイミング | 役割 |
+|-----------|---------------|------|
+| `run_daily_jquants.py` | 平日 22:00 | J-Quants APIから日次株価データを取得 |
+| `run_weekly_tasks.py` | 日曜 20:00 | 財務諸表取得 + 統合分析実行 |
+| `run_monthly_master.py` | 毎月1日 18:00 | 銘柄マスターデータ更新 |
+
+### 2. API連携レイヤー (`core/jquants/`)
+
+| モジュール | 機能 |
+|-----------|------|
+| `data_processor.py` | 非同期処理による日次株価データ取得 |
+| `statements_processor.py` | 財務諸表APIフェッチャー |
+| `fundamentals_calculator.py` | PER, PBR, ROE, ROA等の財務指標計算 |
+
+### 3. 分析レイヤー (`core/analysis/`)
+
+| モジュール | 分析手法 | 出力テーブル |
+|-----------|---------|-------------|
+| `minervini.py` | マーク・ミネルヴィニのトレンドスクリーニング | minervini |
+| `high_low_ratio.py` | 52週高値・安値位置比率 | hl_ratio |
+| `relative_strength.py` | 相対力指数（RSP/RSI） | relative_strength |
+| `chart_classification.py` | MLベースチャートパターン分類 | classification_results |
+| `integrated_analysis.py` | 複数指標の統合クエリ | - |
+| `integrated_analysis2.py` | Excel形式レポート出力 | output/*.xlsx |
+
+### 4. ユーティリティレイヤー (`core/utils/`)
+
+| モジュール | 機能 |
+|-----------|------|
+| `parallel_processor.py` | ProcessPoolExecutor/ThreadPoolExecutorラッパー |
+| `cache_manager.py` | APIレスポンス・計算結果のメモリキャッシュ |
+
+### 5. データアクセスレイヤー (`stock_reader/`)
+
+pandas_datareader風のシンプルなAPIでJ-Quantsデータにアクセス:
+
+```python
+from stock_reader import DataReader
+
+reader = DataReader()
+df = reader.get_prices("7203", start="2024-01-01", end="2024-12-31")
+```
+
+| モジュール | 機能 |
+|-----------|------|
+| `reader.py` | DataReaderクラス（株価データ取得） |
+| `exceptions.py` | カスタム例外（StockNotFoundError等） |
+| `utils.py` | ユーティリティ関数 |
+
+### 6. 設定レイヤー (`core/config/`)
+
+Pydantic Settingsベースの型安全な設定管理システム:
+
+```python
+from core.config import get_settings
+
+settings = get_settings()
+
+# パス設定
+db_path = settings.paths.jquants_db
+
+# API設定
+max_requests = settings.jquants.max_concurrent_requests
+
+# 分析設定
+sma_short = settings.analysis.sma_short
+```
+
+## データベース設計
+
+### jquants.db - 日次株価データ
+
+```sql
+CREATE TABLE daily_quotes (
+    Code TEXT,
+    Date TEXT,
+    Open REAL,
+    High REAL,
+    Low REAL,
+    Close REAL,
+    AdjustmentClose REAL,
+    Volume INTEGER,
+    PRIMARY KEY (Code, Date)
+);
+
+CREATE INDEX idx_daily_quotes_code ON daily_quotes (Code);
+CREATE INDEX idx_daily_quotes_date ON daily_quotes (Date);
+```
+
+### statements.db - 財務諸表データ
+
+```sql
+CREATE TABLE financial_statements (
+    Code TEXT,
+    DisclosedDate TEXT,
+    ReportType TEXT,
+    ...
+);
+
+CREATE TABLE calculated_fundamentals (
+    Code TEXT,
+    Date TEXT,
+    PER REAL,
+    PBR REAL,
+    ROE REAL,
+    ROA REAL,
+    ...
+);
+```
+
+### analysis_results.db - 分析結果
+
+```sql
+CREATE TABLE hl_ratio (
+    Code TEXT,
+    Date TEXT,
+    hl_ratio REAL,
+    PRIMARY KEY (Code, Date)
+);
+
+CREATE TABLE minervini (
+    Code TEXT,
+    Date TEXT,
+    passed INTEGER,
+    score REAL,
+    ...
+);
+
+CREATE TABLE relative_strength (
+    Code TEXT,
+    Date TEXT,
+    rsp REAL,
+    rsi REAL,
+    ...
+);
+
+CREATE TABLE classification_results (
+    Code TEXT,
+    Date TEXT,
+    window INTEGER,
+    pattern_type TEXT,
+    confidence REAL,
+    ...
+);
+```
+
+## 設計原則
+
+### 1. 疎結合アーキテクチャ
+
+各レイヤーは明確に分離されており、独立してテスト・変更が可能:
+
+- API層: 外部APIとの通信を担当
+- 計算層: ビジネスロジック（分析アルゴリズム）
+- データ層: SQLiteデータベース操作
+
+### 2. 設定の一元管理
+
+`core/config/settings.py`で全設定を集約:
+
+- 環境変数からの読み込み
+- 型安全なアクセス
+- シングルトンパターンでインスタンス共有
+
+### 3. パフォーマンス最適化
+
+処理時間を5時間から15-20分に短縮:
+
+- 非同期処理: aiohttp + asyncio
+- 並列処理: ProcessPoolExecutor
+- バッチ処理: 一括データベース操作
+- ベクトル化: NumPy/Pandas
+- キャッシュ: テンプレート・計算結果
+
+### 4. エラー耐性
+
+- 個別銘柄のエラーが全体処理を停止しない設計
+- エラーログの出力(`output/errors/`)
+- リトライ機構（API呼び出し）
+
+## 技術スタック
+
+| カテゴリ | 技術 |
+|---------|------|
+| 言語 | Python 3.10+ |
+| データ処理 | pandas, numpy |
+| 非同期処理 | asyncio, aiohttp |
+| データベース | SQLite (WALモード) |
+| 設定管理 | pydantic-settings |
+| 機械学習 | scikit-learn |
+| テスト | pytest |
+| コード品質 | black, ruff, mypy |

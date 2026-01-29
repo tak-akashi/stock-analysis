@@ -10,10 +10,10 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
 # Import functions from other analysis modules
-from backend.analysis.high_low_ratio import calc_hl_ratio_for_all, init_hl_ratio_db
-from backend.analysis.minervini import update_minervini_db, update_type8_db, MinerviniConfig, setup_logging, init_minervini_db
-from backend.analysis.relative_strength import update_rsp_db, update_rsi_db, init_rsp_db, init_results_db
-from backend.analysis.integrated_analysis import create_analysis_summary
+from core.analysis.high_low_ratio import calc_hl_ratio_for_all, init_hl_ratio_db
+from core.analysis.minervini import update_minervini_db, update_type8_db, MinerviniConfig, setup_logging, init_minervini_db
+from core.analysis.relative_strength import update_rsp_db, update_rsi_db, init_rsp_db, init_results_db
+from core.analysis.integrated_analysis import create_analysis_summary
 
 
 class DatabaseManager:

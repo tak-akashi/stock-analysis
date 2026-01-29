@@ -13,7 +13,7 @@ sys.path.insert(0, project_root)
 
 # Import the main function to be tested
 from scripts.run_daily_analysis import run_daily_analysis  # noqa: E402
-from backend.analysis.minervini import MinerviniConfig  # noqa: E402
+from core.analysis.minervini import MinerviniConfig  # noqa: E402
 
 @pytest.fixture
 def setup_test_environment(tmp_path):
