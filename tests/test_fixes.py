@@ -2,12 +2,8 @@
 """Test script to verify the fixes"""
 
 import sqlite3
-import sys
 
-# Add backend to path
-sys.path.append('/Users/tak/Markets/Stocks/Stock-Analysis/backend')
-
-from analysis.minervini import MinerviniConfig, MinerviniAnalyzer, MinerviniDatabase
+from market_pipeline.analysis.minervini import MinerviniConfig, MinerviniAnalyzer, MinerviniDatabase
 
 def test_fixed_functions():
     """Test the fixed update_type8_by_date function"""

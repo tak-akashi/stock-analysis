@@ -4,50 +4,55 @@
 
 ```
 Stock-Analysis/
-├── core/                          # コアロジックとデータ処理
+├── backend/                          # バックエンドパッケージ群
 │   ├── __init__.py
-│   ├── analysis/                     # 分析アルゴリズム
-│   │   ├── __init__.py
-│   │   ├── minervini.py              # ミネルヴィニトレンドスクリーニング
-│   │   ├── high_low_ratio.py         # 52週高値・安値比率
-│   │   ├── relative_strength.py      # RSP/RSI計算
-│   │   ├── chart_classification.py   # MLベースチャートパターン分類
-│   │   ├── integrated_analysis.py    # 複数指標統合クエリ
-│   │   ├── integrated_analysis2.py   # Excel出力生成
-│   │   ├── demo_integrated_analysis.py
-│   │   └── _old/                     # 旧バージョン（参照用）
-│   │       ├── minervini.py
-│   │       ├── high_low_ratio.py
-│   │       └── relative_strength.py
 │   │
-│   ├── config/                       # 設定管理
-│   │   ├── __init__.py               # get_settings()エクスポート
-│   │   └── settings.py               # Pydantic Settings定義
-│   │
-│   ├── jquants/                      # J-Quants API連携
+│   ├── market_pipeline/              # コアロジックとデータ処理（旧core/）
 │   │   ├── __init__.py
-│   │   ├── data_processor.py         # 日次株価データ取得（非同期）
-│   │   ├── statements_processor.py   # 財務諸表API
-│   │   ├── fundamentals_calculator.py # PER/PBR/ROE等計算
-│   │   └── _old/
+│   │   ├── py.typed                      # PEP 561型ヒントマーカー
+│   │   ├── analysis/                     # 分析アルゴリズム
+│   │   │   ├── __init__.py
+│   │   │   ├── minervini.py              # ミネルヴィニトレンドスクリーニング
+│   │   │   ├── high_low_ratio.py         # 52週高値・安値比率
+│   │   │   ├── relative_strength.py      # RSP/RSI計算
+│   │   │   ├── chart_classification.py   # MLベースチャートパターン分類
+│   │   │   ├── integrated_analysis.py    # 複数指標統合クエリ
+│   │   │   ├── integrated_analysis2.py   # Excel出力生成
+│   │   │   ├── demo_integrated_analysis.py
+│   │   │   └── _old/                     # 旧バージョン（参照用）
+│   │   │       ├── minervini.py
+│   │   │       ├── high_low_ratio.py
+│   │   │       └── relative_strength.py
+│   │   │
+│   │   ├── config/                       # 設定管理
+│   │   │   ├── __init__.py               # get_settings()エクスポート
+│   │   │   └── settings.py               # Pydantic Settings定義
+│   │   │
+│   │   ├── jquants/                      # J-Quants API連携
+│   │   │   ├── __init__.py
+│   │   │   ├── data_processor.py         # 日次株価データ取得（非同期）
+│   │   │   ├── statements_processor.py   # 財務諸表API
+│   │   │   ├── fundamentals_calculator.py # PER/PBR/ROE等計算
+│   │   │   └── _old/
+│   │   │       └── data_processor.py
+│   │   │
+│   │   ├── master/                       # マスターデータ処理
+│   │   │   └── master_db.py
+│   │   │
+│   │   ├── utils/                        # ユーティリティ
+│   │   │   ├── __init__.py
+│   │   │   ├── parallel_processor.py     # 並列処理フレームワーク
+│   │   │   └── cache_manager.py          # キャッシュ管理
+│   │   │
+│   │   └── yfinance/                     # yfinance連携（レガシー、移行中）
 │   │       └── data_processor.py
 │   │
-│   ├── master/                       # マスターデータ処理
-│   │   └── master_db.py
-│   │
-│   ├── utils/                        # ユーティリティ
-│   │   ├── __init__.py
-│   │   ├── parallel_processor.py     # 並列処理フレームワーク
-│   │   └── cache_manager.py          # キャッシュ管理
-│   │
-│   └── yfinance/                     # yfinance連携（レガシー、移行中）
-│       └── data_processor.py
-│
-├── stock_reader/                     # pandas_datareader風データアクセスAPI
-│   ├── __init__.py                   # パッケージエクスポート
-│   ├── reader.py                     # DataReaderクラス実装
-│   ├── utils.py                      # ユーティリティ関数
-│   └── exceptions.py                 # カスタム例外クラス
+│   └── market_reader/                    # pandas_datareader風データアクセスAPI（旧stock_reader/）
+│       ├── __init__.py                   # パッケージエクスポート
+│       ├── py.typed                      # PEP 561型ヒントマーカー
+│       ├── reader.py                     # DataReaderクラス実装
+│       ├── utils.py                      # ユーティリティ関数
+│       └── exceptions.py                 # カスタム例外クラス
 │
 ├── scripts/                          # 実行スクリプト（cron用）
 │   ├── run_daily_jquants.py          # 日次株価取得（平日22:00）
@@ -67,19 +72,19 @@ Stock-Analysis/
 │   ├── test_relative_strength.py
 │   ├── test_chart_classification.py
 │   ├── test_integrated_analysis.py
-│   ├── test_integrated_analysis_optimization.py
 │   ├── test_jquants_data_processor.py
-│   ├── test_jquants_performance.py
 │   ├── test_statements_processor.py
 │   ├── test_fundamentals_calculator.py
 │   ├── test_data_processor.py        # yfinance（レガシー）
 │   ├── test_analysis_integration.py
 │   ├── test_type8_optimization.py
 │   ├── test_rsi_optimization.py
-│   ├── test_optimizations.py
-│   ├── test_functions.py
 │   ├── test_fixes.py
-│   └── simple_test.py
+│   ├── test_stock_reader.py          # market_readerパッケージテスト
+│   ├── simple_test.py
+│   ├── benchmark_integrated_analysis_optimization.py  # パフォーマンスベンチマーク
+│   ├── benchmark_jquants_performance.py               # J-Quantsパフォーマンスベンチマーク
+│   └── benchmark_optimizations.py                     # 最適化ベンチマーク
 │
 ├── data/                             # SQLiteデータベース
 │   ├── jquants.db                    # 日次株価（820MB）
@@ -108,6 +113,8 @@ Stock-Analysis/
 │   │   ├── OPTIMIZATION_TECHNIQUES_GUIDE.md
 │   │   ├── JQUANTS_OPTIMIZATION_README.md
 │   │   └── ANALYSIS_OPTIMIZATION_README.md
+│   ├── plan/                         # 実装計画ドキュメント
+│   │   └── *.md
 │   └── ideas/                        # アイデア・検討用ドキュメント
 │
 ├── notebooks/                        # Jupyter Notebook（分析・可視化用）
@@ -139,19 +146,19 @@ Stock-Analysis/
 
 | パス | 説明 |
 |-----|------|
-| `core/config/settings.py` | Pydantic Settings による設定管理 |
-| `core/jquants/data_processor.py` | 非同期株価データ取得（~500行） |
-| `core/jquants/statements_processor.py` | 財務諸表取得（~400行） |
-| `core/jquants/fundamentals_calculator.py` | 財務指標計算（~300行） |
-| `core/analysis/minervini.py` | ミネルヴィニ分析 |
-| `core/analysis/high_low_ratio.py` | HL比率計算 |
-| `core/analysis/relative_strength.py` | RSP/RSI計算 |
-| `core/analysis/chart_classification.py` | チャートパターン分類 |
-| `core/analysis/integrated_analysis2.py` | Excel出力 |
-| `core/utils/parallel_processor.py` | 並列処理ラッパー |
-| `core/utils/cache_manager.py` | キャッシュ管理 |
-| `stock_reader/reader.py` | DataReaderクラス（pandas_datareader風API） |
-| `stock_reader/exceptions.py` | カスタム例外クラス |
+| `backend/market_pipeline/config/settings.py` | Pydantic Settings による設定管理 |
+| `backend/market_pipeline/jquants/data_processor.py` | 非同期株価データ取得（~500行） |
+| `backend/market_pipeline/jquants/statements_processor.py` | 財務諸表取得（~400行） |
+| `backend/market_pipeline/jquants/fundamentals_calculator.py` | 財務指標計算（~300行） |
+| `backend/market_pipeline/analysis/minervini.py` | ミネルヴィニ分析 |
+| `backend/market_pipeline/analysis/high_low_ratio.py` | HL比率計算 |
+| `backend/market_pipeline/analysis/relative_strength.py` | RSP/RSI計算 |
+| `backend/market_pipeline/analysis/chart_classification.py` | チャートパターン分類 |
+| `backend/market_pipeline/analysis/integrated_analysis2.py` | Excel出力 |
+| `backend/market_pipeline/utils/parallel_processor.py` | 並列処理ラッパー |
+| `backend/market_pipeline/utils/cache_manager.py` | キャッシュ管理 |
+| `backend/market_reader/reader.py` | DataReaderクラス（pandas_datareader風API） |
+| `backend/market_reader/exceptions.py` | カスタム例外クラス |
 
 ### スクリプト
 
@@ -182,11 +189,25 @@ Stock-Analysis/
 | `tests/test_high_low_ratio.py` | HL比率 |
 | `tests/test_relative_strength.py` | RSP/RSI |
 | `tests/test_chart_classification.py` | チャートパターン分類 |
+| `tests/test_integrated_analysis.py` | 統合分析 |
+| `tests/test_analysis_integration.py` | 分析モジュール統合テスト |
 | `tests/test_statements_processor.py` | 財務諸表処理 |
 | `tests/test_fundamentals_calculator.py` | 財務指標計算 |
 | `tests/test_jquants_data_processor.py` | J-Quants API |
-| `tests/test_jquants_performance.py` | パフォーマンステスト |
-| `tests/test_stock_reader.py` | stock_readerパッケージ |
+| `tests/test_data_processor.py` | yfinanceデータ処理（レガシー） |
+| `tests/test_stock_reader.py` | market_readerパッケージ |
+| `tests/test_type8_optimization.py` | Type8最適化 |
+| `tests/test_rsi_optimization.py` | RSI最適化 |
+| `tests/test_fixes.py` | バグ修正検証 |
+| `tests/simple_test.py` | 簡易テスト |
+
+### ベンチマークファイル
+
+| ファイル | 対象 |
+|---------|-----|
+| `tests/benchmark_integrated_analysis_optimization.py` | 統合分析パフォーマンス |
+| `tests/benchmark_jquants_performance.py` | J-Quantsデータ取得パフォーマンス |
+| `tests/benchmark_optimizations.py` | 各種最適化パフォーマンス |
 
 ## ディレクトリ命名規則
 

@@ -11,13 +11,8 @@ import logging
 import subprocess
 import sys
 from datetime import datetime
-from pathlib import Path
 
-# プロジェクトルートをPythonパスに追加
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
-
-from core.config import get_settings  # noqa: E402
+from market_pipeline.config import get_settings
 
 
 class ColoredFormatter(logging.Formatter):
@@ -89,7 +84,7 @@ def main():
             )
 
             # 1. 財務諸表データを取得
-            from core.jquants.statements_processor import JQuantsStatementsProcessor
+            from market_pipeline.jquants.statements_processor import JQuantsStatementsProcessor
 
             processor = JQuantsStatementsProcessor(
                 max_concurrent_requests=settings.jquants.max_concurrent_requests,
@@ -101,7 +96,7 @@ def main():
 
             # 2. 財務指標を計算
             print(f"=== 財務指標計算開始 {datetime.now()} ===")
-            from core.jquants.fundamentals_calculator import FundamentalsCalculator
+            from market_pipeline.jquants.fundamentals_calculator import FundamentalsCalculator
 
             calculator = FundamentalsCalculator(
                 statements_db_path=str(settings.paths.statements_db),
@@ -114,7 +109,7 @@ def main():
         if run_analysis:
             print(f"=== 統合分析処理開始 {datetime.now()} ===")
             analysis_script_path = (
-                settings.paths.base_dir / "backend" / "analysis" / "integrated_analysis2.py"
+                settings.paths.base_dir / "backend" / "market_pipeline" / "analysis" / "integrated_analysis2.py"
             )
             subprocess.run([sys.executable, str(analysis_script_path)], check=True)
             print(f"=== 統合分析処理完了 {datetime.now()} ===")

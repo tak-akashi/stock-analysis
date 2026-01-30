@@ -9,11 +9,8 @@ import time
 import logging
 from datetime import datetime
 
-# Add project root to sys.path
-project_root = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, project_root)
-
-from core.analysis.relative_strength import update_rsi_db  # noqa: E402
+from market_pipeline.config import get_settings
+from market_pipeline.analysis.relative_strength import update_rsi_db
 
 def setup_logging():
     """Setup logging for the test"""
@@ -36,8 +33,9 @@ def main():
     logger.info("=" * 60)
     
     # Database path
-    results_db_path = os.path.join(project_root, "data", "analysis_results.db")
-    
+    settings = get_settings()
+    results_db_path = str(settings.paths.analysis_db)
+
     if not os.path.exists(results_db_path):
         logger.error(f"Database not found: {results_db_path}")
         return False

@@ -1,16 +1,11 @@
-
 import pytest
 import pandas as pd
 import sqlite3
-from datetime import datetime, timedelta
+import tempfile
 import os
-import sys
+from datetime import datetime, timedelta
 
-# Add project root to sys.path to allow imports from backend
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, project_root)
-
-from core.analysis.minervini import (  # noqa: E402
+from market_pipeline.analysis.minervini import (
     init_minervini_db,
     update_minervini_db
 )
@@ -18,19 +13,25 @@ from core.analysis.minervini import (  # noqa: E402
 @pytest.fixture
 def setup_dbs():
     """
-    Provides two in-memory database connections:
+    Provides two file-based database connections:
     1. source_conn: A source DB with a populated 'daily_quotes' table.
     2. dest_conn: An empty destination DB for writing analysis results.
     """
+    # Create temporary files for databases
+    source_fd, source_path = tempfile.mkstemp(suffix='.db')
+    dest_fd, dest_path = tempfile.mkstemp(suffix='.db')
+    os.close(source_fd)
+    os.close(dest_fd)
+
     # 1. Setup Source DB
-    source_conn = sqlite3.connect(":memory:")
+    source_conn = sqlite3.connect(source_path)
     source_cursor = source_conn.cursor()
     source_cursor.execute("""
         CREATE TABLE daily_quotes (
             Date TEXT, Code TEXT, Open REAL, High REAL, Low REAL, Close REAL, Volume INTEGER, AdjustmentClose REAL
         )
     """)
-    
+
     # Insert enough data for 260-day calculations
     end_date = datetime(2023, 12, 31)
     for i in range(300):
@@ -43,12 +44,14 @@ def setup_dbs():
     source_conn.commit()
 
     # 2. Setup Destination DB (initially empty)
-    dest_conn = sqlite3.connect(":memory:")
-    
+    dest_conn = sqlite3.connect(dest_path)
+
     yield source_conn, dest_conn
-    
+
     source_conn.close()
     dest_conn.close()
+    os.unlink(source_path)
+    os.unlink(dest_path)
 
 def test_init_minervini_db(setup_dbs):
     """

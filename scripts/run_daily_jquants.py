@@ -7,14 +7,9 @@ cronから実行される日次タスク
 import logging
 import sys
 from datetime import datetime
-from pathlib import Path
 
-# プロジェクトルートをPythonパスに追加
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
-
-from core.config import get_settings  # noqa: E402
-from core.jquants.data_processor import JQuantsDataProcessor  # noqa: E402
+from market_pipeline.config import get_settings
+from market_pipeline.jquants.data_processor import JQuantsDataProcessor
 
 
 def setup_logging(settings):

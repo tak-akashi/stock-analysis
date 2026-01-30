@@ -1,13 +1,13 @@
 # API リファレンス
 
-## 設定モジュール (`core/config/`)
+## 設定モジュール (`backend/market_pipeline/config/`)
 
 ### get_settings()
 
 設定インスタンスを取得します（シングルトン）。
 
 ```python
-from core.config import get_settings
+from market_pipeline.config import get_settings
 
 settings = get_settings()
 ```
@@ -82,14 +82,14 @@ settings = get_settings()
 
 ---
 
-## Stock Reader パッケージ (`stock_reader/`)
+## Market Reader パッケージ (`backend/market_reader/`)
 
 pandas_datareader風のインターフェースでJ-Quantsの株価データにアクセスするパッケージ。
 
 ### DataReader
 
 ```python
-from stock_reader import DataReader
+from market_reader import DataReader
 
 reader = DataReader()
 df = reader.get_prices("7203", start="2024-01-01", end="2024-12-31")
@@ -178,7 +178,7 @@ DataReader(db_path: str | Path | None = None, strict: bool = False)
 | `DatabaseConnectionError` | DB接続エラー |
 | `InvalidDateRangeError` | 日付範囲エラー（start > end） |
 
-### ユーティリティ関数 (`stock_reader/utils.py`)
+### ユーティリティ関数 (`backend/market_reader/utils.py`)
 
 ##### `normalize_code(code: str) -> str`
 
@@ -218,14 +218,14 @@ DataReader(db_path: str | Path | None = None, strict: bool = False)
 
 ---
 
-## J-Quants モジュール (`core/jquants/`)
+## J-Quants モジュール (`backend/market_pipeline/jquants/`)
 
 ### JQuantsDataProcessor
 
 日次株価データの取得と保存を担当。
 
 ```python
-from core.jquants.data_processor import JQuantsDataProcessor
+from market_pipeline.jquants.data_processor import JQuantsDataProcessor
 
 processor = JQuantsDataProcessor()
 await processor.fetch_and_store_daily_quotes(stock_codes, start_date, end_date)
@@ -251,7 +251,7 @@ J-Quants APIのリフレッシュトークンを取得。
 財務諸表データの取得を担当。
 
 ```python
-from core.jquants.statements_processor import JQuantsStatementsProcessor
+from market_pipeline.jquants.statements_processor import JQuantsStatementsProcessor
 
 processor = JQuantsStatementsProcessor(
     max_concurrent_requests=3,
@@ -306,7 +306,7 @@ JQuantsStatementsProcessor(
 財務指標の計算を担当。
 
 ```python
-from core.jquants.fundamentals_calculator import FundamentalsCalculator
+from market_pipeline.jquants.fundamentals_calculator import FundamentalsCalculator
 
 calculator = FundamentalsCalculator(
     statements_db_path="data/statements.db",
@@ -379,46 +379,143 @@ ROA（総資産利益率）を計算。
 
 ---
 
-## 分析モジュール (`core/analysis/`)
+## 分析モジュール (`backend/market_pipeline/analysis/`)
 
-### MinerviniAnalyzer
+### MinerviniConfig
 
-マーク・ミネルヴィニのトレンドスクリーニング戦略。
+ミネルヴィニ分析の設定クラス。
 
 ```python
-from core.analysis.minervini import MinerviniAnalyzer
+from market_pipeline.analysis.minervini import MinerviniConfig
 
-analyzer = MinerviniAnalyzer(db_path)
-results = analyzer.analyze(stock_codes, date)
+config = MinerviniConfig(base_dir=Path("/path/to/project"))
 ```
 
 #### コンストラクタ
 
 ```python
-MinerviniAnalyzer(db_path: str | Path)
+MinerviniConfig(base_dir: Optional[Path] = None)
 ```
 
 **パラメータ**:
-- `db_path`: jquants.dbのパス
+- `base_dir`: プロジェクトルートディレクトリ（省略時はデフォルトパス）
+
+**属性**:
+- `base_dir`: プロジェクトルートディレクトリ
+- `data_dir`: データディレクトリ (`base_dir/data`)
+- `logs_dir`: ログディレクトリ (`base_dir/logs`)
+- `output_dir`: 出力ディレクトリ (`base_dir/output`)
+- `jquants_db_path`: J-Quants DB パス
+- `results_db_path`: 分析結果DB パス
+- `error_output_dir`: エラー出力ディレクトリ
+
+### MinerviniAnalyzer
+
+マーク・ミネルヴィニのトレンドスクリーニング戦略。ベクトル化演算による最適化実装。
+
+```python
+from market_pipeline.analysis.minervini import MinerviniAnalyzer, MinerviniConfig
+
+config = MinerviniConfig()
+analyzer = MinerviniAnalyzer(config)
+results = analyzer.calculate_strategy_vectorized(df)
+```
+
+#### コンストラクタ
+
+```python
+MinerviniAnalyzer(config: MinerviniConfig)
+```
+
+**パラメータ**:
+- `config`: MinerviniConfigインスタンス
 
 #### メソッド
 
-##### `analyze(stock_codes, date) -> pd.DataFrame`
+##### `calculate_strategy_vectorized(df: pd.DataFrame) -> pd.DataFrame`
 
-指定日時点でのミネルヴィニ条件チェック。
+ベクトル化演算によるミネルヴィニ条件の計算。
 
 **パラメータ**:
-- `stock_codes` (`list[str]`): 銘柄コードリスト
-- `date` (`str`): 分析日 (YYYY-MM-DD)
+- `df` (`pd.DataFrame`): DateインデックスとAdjustmentCloseカラムを持つDataFrame
 
-**戻り値**: `pd.DataFrame` - 各条件の合否とスコア
+**戻り値**: `pd.DataFrame` - 以下のカラムを含むDataFrame
 
-### High-Low Ratio 関数 (`core/analysis/high_low_ratio.py`)
+| カラム | 説明 |
+|--------|------|
+| `Close` | 終値 |
+| `Sma50` | 50日移動平均 |
+| `Sma150` | 150日移動平均 |
+| `Sma200` | 200日移動平均 |
+| `Type_1` | 株価が150日・200日MAより上（1.0/0.0） |
+| `Type_2` | 150日MAが200日MAより上（1.0/0.0） |
+| `Type_3` | 200日MAが1ヶ月間上昇トレンド（1.0/0.0） |
+| `Type_4` | 50日MAが150日・200日MAより上（1.0/0.0） |
+| `Type_5` | 株価が50日MAより上（1.0/0.0） |
+| `Type_6` | 株価が52週安値の130%以上（1.0/0.0） |
+| `Type_7` | 株価が52週高値の75%以上（1.0/0.0） |
+| `Type_8` | RSI >= 70（別途計算、初期値NaN） |
+
+### MinerviniDatabase
+
+ミネルヴィニ分析のデータベース操作クラス。
+
+```python
+from market_pipeline.analysis.minervini import MinerviniDatabase, MinerviniConfig
+
+config = MinerviniConfig()
+database = MinerviniDatabase(config)
+database.init_database(source_db_path, dest_db_path, code_list)
+```
+
+#### コンストラクタ
+
+```python
+MinerviniDatabase(config: MinerviniConfig)
+```
+
+**パラメータ**:
+- `config`: MinerviniConfigインスタンス
+
+#### メソッド
+
+##### `init_minervini_table(dest_db_path: str)`
+
+Minerviniテーブルとインデックスを初期化。
+
+##### `init_database(source_db_path: str, dest_db_path: str, code_list: List[str], n_workers: Optional[int] = None)`
+
+全銘柄のMinerviniデータベースを並列処理で初期化。
+
+##### `update_database(source_db_path: str, dest_db_path: str, code_list: List[str], calc_start_date: str, calc_end_date: str, period: int = 5)`
+
+Minerviniデータベースを更新。
+
+##### `update_type8(dest_db_path: str, date_list: List[str], period: int = -5)`
+
+Type 8（相対力指数）をバッチ操作で更新。
+
+### 後方互換関数
+
+```python
+from market_pipeline.analysis.minervini import init_minervini_db, update_minervini_db, update_type8_db
+
+# 初期化（SQLite接続オブジェクト使用）
+init_minervini_db(source_conn, dest_conn, code_list, n_workers)
+
+# 更新
+update_minervini_db(source_conn, dest_conn, code_list, calc_start_date, calc_end_date, period)
+
+# Type 8更新
+update_type8_db(conn, date_list, period)
+```
+
+### High-Low Ratio 関数 (`backend/market_pipeline/analysis/high_low_ratio.py`)
 
 52週高値・安値位置比率の計算。関数ベースで実装。
 
 ```python
-from core.analysis.high_low_ratio import calc_hl_ratio_for_all, calc_hl_ratio_by_code
+from market_pipeline.analysis.high_low_ratio import calc_hl_ratio_for_all, calc_hl_ratio_by_code
 
 # 全銘柄のHL比率を計算
 ratio_df = calc_hl_ratio_for_all(db_path, end_date, weeks=52)
@@ -471,12 +568,12 @@ HL比率テーブルを初期化。
 
 **戻り値**: `pd.DataFrame` - Code, HlRatio, MedianRatio
 
-### Relative Strength 関数 (`core/analysis/relative_strength.py`)
+### Relative Strength 関数 (`backend/market_pipeline/analysis/relative_strength.py`)
 
 相対力指標（RSP/RSI）の計算。関数ベースで実装。
 
 ```python
-from core.analysis.relative_strength import (
+from market_pipeline.analysis.relative_strength import (
     init_rsp_db, update_rsp_db, update_rsi_db,
     relative_strength_percentage_vectorized
 )
@@ -548,7 +645,7 @@ RSP（相対力パーセンテージ）をベクトル化計算。
 MLベースのチャートパターン分類。テンプレートマッチングによるパターン検出。
 
 ```python
-from core.analysis.chart_classification import OptimizedChartClassifier, ChartClassifier
+from market_pipeline.analysis.chart_classification import OptimizedChartClassifier, ChartClassifier
 
 # OptimizedChartClassifier（推奨）
 classifier = OptimizedChartClassifier(
@@ -627,14 +724,14 @@ ChartClassifier(ticker: str, window: int, db_path: str = JQUANTS_DB_PATH)
 
 ---
 
-## マスターモジュール (`core/master/`)
+## マスターモジュール (`backend/market_pipeline/master/`)
 
 ### StockMasterDB
 
 東証上場銘柄のマスター情報を管理するクラス。各データソース間の共通参照テーブルを提供。
 
 ```python
-from core.master.master_db import StockMasterDB
+from market_pipeline.master.master_db import StockMasterDB
 
 master_db = StockMasterDB(db_path="data/master.db")
 
@@ -728,14 +825,14 @@ ExcelファイルからTSE上場銘柄データを読み込み（内部使用）
 
 ---
 
-## ユーティリティ (`core/utils/`)
+## ユーティリティ (`backend/market_pipeline/utils/`)
 
 ### ParallelProcessor
 
 並列処理のラッパークラス。
 
 ```python
-from core.utils.parallel_processor import ParallelProcessor
+from market_pipeline.utils.parallel_processor import ParallelProcessor
 
 processor = ParallelProcessor(n_workers=8)
 results = processor.process(items, process_func)
@@ -769,7 +866,7 @@ ParallelProcessor(n_workers: int = None, use_threads: bool = False)
 効率的なバッチデータベース操作のユーティリティクラス。
 
 ```python
-from core.utils.parallel_processor import BatchDatabaseProcessor
+from market_pipeline.utils.parallel_processor import BatchDatabaseProcessor
 
 processor = BatchDatabaseProcessor(db_path, batch_size=1000)
 
@@ -804,7 +901,7 @@ BatchDatabaseProcessor(db_path: str, batch_size: int = 1000)
 **パラメータ**:
 - `table_name` (`str`): テーブル名
 - `data` (`List[Dict]`): 行データのリスト
-- `on_conflict` (`str`): 競合時の処理（'REPLACE' | 'IGNORE' など）
+- `on_conflict` (`str`): 競合時の処理（'REPLACE' | 'IGNORE' | 'ABORT' | 'ROLLBACK' | 'FAIL'）
 
 **戻り値**: `int` - 挿入された行数
 
@@ -828,7 +925,7 @@ BatchDatabaseProcessor(db_path: str, batch_size: int = 1000)
 関数の実行時間を計測するデコレータ。
 
 ```python
-from core.utils.parallel_processor import measure_performance
+from market_pipeline.utils.parallel_processor import measure_performance
 
 @measure_performance
 def my_function():
@@ -841,7 +938,7 @@ def my_function():
 メモリ・ディスクベースのキャッシュ管理クラス。
 
 ```python
-from core.utils.cache_manager import CacheManager, get_cache
+from market_pipeline.utils.cache_manager import CacheManager, get_cache
 
 # グローバルキャッシュインスタンスを取得（推奨）
 cache = get_cache()

@@ -78,7 +78,7 @@ Stock-Analysisは、日本株式市場データの自動収集・分析システ
 | `run_weekly_tasks.py` | 日曜 20:00 | 財務諸表取得 + 統合分析実行 |
 | `run_monthly_master.py` | 毎月1日 18:00 | 銘柄マスターデータ更新 |
 
-### 2. API連携レイヤー (`core/jquants/`)
+### 2. API連携レイヤー (`backend/market_pipeline/jquants/`)
 
 | モジュール | 機能 |
 |-----------|------|
@@ -86,7 +86,7 @@ Stock-Analysisは、日本株式市場データの自動収集・分析システ
 | `statements_processor.py` | 財務諸表APIフェッチャー |
 | `fundamentals_calculator.py` | PER, PBR, ROE, ROA等の財務指標計算 |
 
-### 3. 分析レイヤー (`core/analysis/`)
+### 3. 分析レイヤー (`backend/market_pipeline/analysis/`)
 
 | モジュール | 分析手法 | 出力テーブル |
 |-----------|---------|-------------|
@@ -97,19 +97,19 @@ Stock-Analysisは、日本株式市場データの自動収集・分析システ
 | `integrated_analysis.py` | 複数指標の統合クエリ | - |
 | `integrated_analysis2.py` | Excel形式レポート出力 | output/*.xlsx |
 
-### 4. ユーティリティレイヤー (`core/utils/`)
+### 4. ユーティリティレイヤー (`backend/market_pipeline/utils/`)
 
 | モジュール | 機能 |
 |-----------|------|
 | `parallel_processor.py` | ProcessPoolExecutor/ThreadPoolExecutorラッパー |
 | `cache_manager.py` | APIレスポンス・計算結果のメモリキャッシュ |
 
-### 5. データアクセスレイヤー (`stock_reader/`)
+### 5. データアクセスレイヤー (`backend/market_reader/`)
 
 pandas_datareader風のシンプルなAPIでJ-Quantsデータにアクセス:
 
 ```python
-from stock_reader import DataReader
+from market_reader import DataReader
 
 reader = DataReader()
 df = reader.get_prices("7203", start="2024-01-01", end="2024-12-31")
@@ -121,12 +121,12 @@ df = reader.get_prices("7203", start="2024-01-01", end="2024-12-31")
 | `exceptions.py` | カスタム例外（StockNotFoundError等） |
 | `utils.py` | ユーティリティ関数 |
 
-### 6. 設定レイヤー (`core/config/`)
+### 6. 設定レイヤー (`backend/market_pipeline/config/`)
 
 Pydantic Settingsベースの型安全な設定管理システム:
 
 ```python
-from core.config import get_settings
+from market_pipeline.config import get_settings
 
 settings = get_settings()
 
@@ -230,7 +230,7 @@ CREATE TABLE classification_results (
 
 ### 2. 設定の一元管理
 
-`core/config/settings.py`で全設定を集約:
+`backend/market_pipeline/config/settings.py`で全設定を集約:
 
 - 環境変数からの読み込み
 - 型安全なアクセス

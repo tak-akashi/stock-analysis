@@ -8,7 +8,7 @@ import sqlite3
 import tempfile
 from unittest.mock import patch, MagicMock
 
-from core.jquants.fundamentals_calculator import FundamentalsCalculator
+from market_pipeline.jquants.fundamentals_calculator import FundamentalsCalculator
 
 
 @pytest.fixture
@@ -188,7 +188,7 @@ def temp_jquants_db():
 @pytest.fixture
 def mock_cache():
     """Mock the cache manager."""
-    with patch('backend.jquants.fundamentals_calculator.get_cache') as mock:
+    with patch('market_pipeline.jquants.fundamentals_calculator.get_cache') as mock:
         cache_instance = MagicMock()
         # Return listed info when cache.get is called
         cache_instance.get.return_value = [

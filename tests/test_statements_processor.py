@@ -8,8 +8,7 @@ import sqlite3
 import tempfile
 from unittest.mock import patch, MagicMock
 
-# テスト対象のモジュールをインポート
-from core.jquants.statements_processor import JQuantsStatementsProcessor
+from market_pipeline.jquants.statements_processor import JQuantsStatementsProcessor
 
 # テスト用の固定値を設定
 TEST_REFRESH_TOKEN = "test_refresh_token"
@@ -62,8 +61,8 @@ def mock_api_responses():
 @pytest.fixture
 def mock_requests():
     """Mock requests.post and requests.get for authentication."""
-    with patch('backend.jquants.statements_processor.requests.post') as mock_post, \
-         patch('backend.jquants.statements_processor.requests.get') as mock_get:
+    with patch('market_pipeline.jquants.statements_processor.requests.post') as mock_post, \
+         patch('market_pipeline.jquants.statements_processor.requests.get') as mock_get:
         # auth_user のレスポンス
         def post_side_effect(url, data=None, params=None, headers=None):
             if "auth_user" in url:
