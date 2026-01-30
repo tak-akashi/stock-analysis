@@ -8,13 +8,8 @@ import time
 import logging
 import tempfile
 from datetime import datetime, timedelta
-from pathlib import Path
 
-# Add project root to sys.path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
-
-from core.jquants.data_processor import JQuantsDataProcessor  # noqa: E402
+from market_pipeline.jquants.data_processor import JQuantsDataProcessor
 
 
 def setup_logging():

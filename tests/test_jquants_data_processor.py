@@ -6,8 +6,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import tempfile
 
-# テスト対象のモジュールをインポート
-from core.jquants.data_processor import JQuantsDataProcessor
+from market_pipeline.jquants.data_processor import JQuantsDataProcessor
 
 # テスト用の固定値を設定
 TEST_REFRESH_TOKEN = "test_refresh_token"
@@ -145,8 +144,8 @@ def test_main_saves_to_db(mock_sleep, processor, mock_requests):
                     return db_path
                 return os.path.join(*args)
 
-            with patch('backend.jquants.data_processor.os.path.join', side_effect=mock_path_join):
-                from core.jquants.data_processor import main
+            with patch('market_pipeline.jquants.data_processor.os.path.join', side_effect=mock_path_join):
+                from market_pipeline.jquants.data_processor import main
                 main()
 
                 # データベースが作成されたか確認

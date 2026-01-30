@@ -41,7 +41,7 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["stock_reader*", "core*"]
+where = ["backend"]
 
 [tool.pytest.ini_options]
-pythonpath = "."
+pythonpath = ["backend", "."]

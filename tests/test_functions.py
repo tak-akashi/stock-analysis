@@ -3,14 +3,10 @@
 Test script to verify update_rsi_db and update_type8_by_date functions
 """
 
-import sys
 import sqlite3
 
-# Add backend to path
-sys.path.append('/Users/tak/Markets/Stocks/Stock-Analysis/backend')
-
-from analysis.relative_strength import update_rsi_db
-from analysis.minervini import update_type8_db_by_date
+from market_pipeline.analysis.relative_strength import update_rsi_db
+from market_pipeline.analysis.minervini import update_type8_db_by_date
 
 def check_database_status():
     """Check current database status"""

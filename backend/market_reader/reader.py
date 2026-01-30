@@ -73,7 +73,7 @@ class DataReader:
         self.strict = strict
 
         if db_path is None:
-            from core.config import get_settings
+            from market_pipeline.config import get_settings
 
             settings = get_settings()
             config_db_path = settings.paths.jquants_db

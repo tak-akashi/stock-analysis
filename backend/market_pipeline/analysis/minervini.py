@@ -17,7 +17,7 @@ from functools import partial
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, project_root)
 
-from core.utils.parallel_processor import BatchDatabaseProcessor, measure_performance  # noqa: E402
+from market_pipeline.utils.parallel_processor import BatchDatabaseProcessor, measure_performance  # noqa: E402
 
 try:
     import talib

@@ -1,10 +1,10 @@
-"""stock_reader - pandas_datareader-like interface for J-Quants data.
+"""market_reader - pandas_datareader-like interface for J-Quants data.
 
 A simple, intuitive API for accessing stock price data stored in SQLite
 databases collected from J-Quants API.
 
 Example:
-    >>> from stock_reader import DataReader
+    >>> from market_reader import DataReader
     >>> reader = DataReader()
     >>> df = reader.get_prices("7203", start="2024-01-01", end="2024-12-31")
     >>> df.head()

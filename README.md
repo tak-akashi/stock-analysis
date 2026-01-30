@@ -22,7 +22,7 @@
 
 ## 分析機能の詳細
 
-`core/analysis` ディレクトリには、以下の分析プログラムが含まれており、それぞれが特定の分析手法を実装しています。
+`backend/market_pipeline/analysis` ディレクトリには、以下の分析プログラムが含まれており、それぞれが特定の分析手法を実装しています。
 
 *   **`minervini.py`**: マーク・ミネルヴィニの株式スクリーニング戦略を実装しています。株価と移動平均線の関係、52週高値・安値からの乖離率などを基に、銘柄のトレンドと強さを評価します。計算結果は `data/analysis_results.db` の `minervini` テーブルに保存されます。
 *   **`high_low_ratio.py`**: 銘柄の高値・安値比率を計算するロジックです。過去52週間の高値と安値の範囲内で、現在の株価がどの位置にあるかを示します。結果は `data/analysis_results.db` の `hl_ratio` テーブルに保存されます。
@@ -35,25 +35,26 @@
 
 ```
 .
-├── core/            # データ処理のコアロジック
-│   ├── analysis/    # 各種分析ロジック
-│   ├── config/      # 設定管理（Pydantic Settings）
-│   ├── jquants/     # J-Quants API関連の処理（株価・財務諸表）
-│   ├── master/      # 銘柄マスター関連の処理
-│   ├── utils/       # ユーティリティ（キャッシュ、並列処理等）
-│   └── yfinance/    # yfinance連携（レガシー）
-├── stock_reader/    # pandas_datareader風のデータアクセスAPI
-├── data/            # データベースファイル（.sqlite, .db）を格納
-├── logs/            # cronジョブの実行ログ
-├── output/          # 分析結果のExcelファイルやエラーログなどを格納
-├── notebooks/       # Jupyter Notebook（分析・可視化用）
-├── scripts/         # 定期実行用のスクリプト群
-├── tests/           # テストコード
-├── docs/            # ドキュメント
-│   ├── core/        # コア設計ドキュメント
-│   └── refs/        # 参考資料
-├── pyproject.toml   # プロジェクトの依存関係定義
-└── README.md        # このファイル
+├── backend/             # バックエンドパッケージ群
+│   ├── market_pipeline/ # データ処理のコアロジック（旧core/）
+│   │   ├── analysis/    # 各種分析ロジック
+│   │   ├── config/      # 設定管理（Pydantic Settings）
+│   │   ├── jquants/     # J-Quants API関連の処理（株価・財務諸表）
+│   │   ├── master/      # 銘柄マスター関連の処理
+│   │   ├── utils/       # ユーティリティ（キャッシュ、並列処理等）
+│   │   └── yfinance/    # yfinance連携（レガシー）
+│   └── market_reader/   # pandas_datareader風のデータアクセスAPI（旧stock_reader/）
+├── data/                # データベースファイル（.sqlite, .db）を格納
+├── logs/                # cronジョブの実行ログ
+├── output/              # 分析結果のExcelファイルやエラーログなどを格納
+├── notebooks/           # Jupyter Notebook（分析・可視化用）
+├── scripts/             # 定期実行用のスクリプト群
+├── tests/               # テストコード
+├── docs/                # ドキュメント
+│   ├── core/            # コア設計ドキュメント
+│   └── refs/            # 参考資料
+├── pyproject.toml       # プロジェクトの依存関係定義
+└── README.md            # このファイル
 ```
 
 ## データベース構造
@@ -146,23 +147,23 @@
 *   **統合分析:**
     `integrated_analysis2.py` を直接実行することで、統合分析を行い、結果をExcelファイルに出力します。
     ```bash
-    python core/analysis/integrated_analysis2.py
+    python backend/market_pipeline/analysis/integrated_analysis2.py
     ```
 
 *   **チャートパターン分類:**
     チャートパターンの分類分析を実行します。複数の実行モードが利用可能です。
     ```bash
     # サンプル実行（基本的なパターン分析）
-    python core/analysis/chart_classification.py --mode sample
+    python backend/market_pipeline/analysis/chart_classification.py --mode sample
 
     # アダプティブウィンドウのサンプル実行（1200/960日の動的選択をテスト）
-    python core/analysis/chart_classification.py --mode sample-adaptive
+    python backend/market_pipeline/analysis/chart_classification.py --mode sample-adaptive
 
     # 全銘柄での高性能分析（アダプティブウィンドウ付き）
-    python core/analysis/chart_classification.py --mode full-optimized
+    python backend/market_pipeline/analysis/chart_classification.py --mode full-optimized
 
     # バッチサイズの調整（メモリ使用量の制御）
-    python core/analysis/chart_classification.py --mode full --batch-size 50
+    python backend/market_pipeline/analysis/chart_classification.py --mode full --batch-size 50
     ```
 
 ### cronによる自動実行
@@ -185,12 +186,12 @@
 ```
 **注意:** `/path/to/python` の部分は、使用しているPython実行環境の絶対パスに置き換えてください。ログファイルのパスも適宜調整してください。
 
-## Stock Reader パッケージ
+## Market Reader パッケージ
 
 pandas_datareader風のインターフェースでJ-Quantsの株価データにアクセスできます。
 
 ```python
-from stock_reader import DataReader
+from market_reader import DataReader
 
 reader = DataReader()  # デフォルトDB設定を使用
 # または明示的にパスとstrictモードを指定

@@ -3,7 +3,6 @@ Test script to validate that optimizations maintain calculation accuracy.
 Compares results from original and optimized implementations.
 """
 
-import os
 import sys
 import logging
 import time
@@ -13,17 +12,13 @@ import pandas as pd
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
-# Add project root to sys.path
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, project_root)
-
 # Import original implementations (from _old folder)
-from core.analysis._old import high_low_ratio as high_low_ratio_old, relative_strength as relative_strength_old  # noqa: E402
+from market_pipeline.analysis._old import high_low_ratio as high_low_ratio_old, relative_strength as relative_strength_old
 
 # Import current implementations (previously optimized)
-from core.analysis import high_low_ratio, relative_strength  # noqa: E402
+from market_pipeline.analysis import high_low_ratio, relative_strength
 
-from core.utils.parallel_processor import measure_performance  # noqa: E402
+from market_pipeline.utils.parallel_processor import measure_performance
 
 
 def setup_logging():

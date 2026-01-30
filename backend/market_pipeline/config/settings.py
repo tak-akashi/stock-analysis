@@ -4,7 +4,7 @@ Centralized configuration management for Stock-Analysis project.
 Uses Pydantic Settings for type-safe configuration with environment variable support.
 
 Usage:
-    from core.config import get_settings
+    from market_pipeline.config import get_settings
 
     settings = get_settings()
     db_path = settings.paths.jquants_db
@@ -27,7 +27,7 @@ class PathSettings(BaseSettings):
         extra="ignore"
     )
 
-    base_dir: Path = Path(__file__).parent.parent.parent  # Project root
+    base_dir: Path = Path(__file__).parent.parent.parent.parent  # Project root
 
     # Directories (computed from base_dir)
     data_dir: Optional[Path] = None

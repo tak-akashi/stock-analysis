@@ -3,18 +3,13 @@ Pytest tests for chart_classification.py
 """
 
 import os
-import sys
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
 import pytest
 
-# Add the backend directory to the path to allow imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend/analysis')))
-
-# Now import the module
-from chart_classification import ChartClassifier, get_all_tickers, init_results_db, save_result_to_db, main_sample, main_full_run, main # Import main
+from market_pipeline.analysis.chart_classification import ChartClassifier, get_all_tickers, init_results_db, save_result_to_db, main_sample, main_full_run, main
 
 # --- Fixtures ---
 

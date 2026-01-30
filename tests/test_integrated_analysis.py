@@ -6,11 +6,7 @@ import datetime
 import tempfile
 import os
 
-# Import the functions to test
-import sys
-sys.path.append('/Users/tak/Markets/Stocks/Stock-Analysis/backend/analysis')
-
-from integrated_analysis import (
+from market_pipeline.analysis.integrated_analysis import (
     get_comprehensive_analysis,
     get_multi_date_analysis,
     get_top_stocks_by_criteria,

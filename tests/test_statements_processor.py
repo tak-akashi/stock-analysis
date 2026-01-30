@@ -8,8 +8,7 @@ import sqlite3
 import tempfile
 from unittest.mock import patch, MagicMock
 
-# テスト対象のモジュールをインポート
-from core.jquants.statements_processor import JQuantsStatementsProcessor
+from market_pipeline.jquants.statements_processor import JQuantsStatementsProcessor
 
 # テスト用の固定値を設定
 TEST_REFRESH_TOKEN = "test_refresh_token"

@@ -41,18 +41,20 @@ python_version = "3.10"
 
 ```
 project_root/
-├── core/           # コアロジック
-│   ├── analysis/      # 分析アルゴリズム
-│   ├── config/        # 設定管理
-│   ├── jquants/       # J-Quants API連携
-│   ├── utils/         # ユーティリティ
-│   └── master/        # マスターデータ処理
-├── scripts/           # 実行スクリプト
-├── tests/             # テストコード
-├── data/              # SQLiteデータベース
-├── output/            # 出力ファイル
-├── logs/              # ログファイル
-└── docs/              # ドキュメント
+├── backend/               # バックエンドパッケージ群
+│   ├── market_pipeline/   # コアロジック（旧core/）
+│   │   ├── analysis/      # 分析アルゴリズム
+│   │   ├── config/        # 設定管理
+│   │   ├── jquants/       # J-Quants API連携
+│   │   ├── utils/         # ユーティリティ
+│   │   └── master/        # マスターデータ処理
+│   └── market_reader/     # データアクセスAPI（旧stock_reader/）
+├── scripts/               # 実行スクリプト
+├── tests/                 # テストコード
+├── data/                  # SQLiteデータベース
+├── output/                # 出力ファイル
+├── logs/                  # ログファイル
+└── docs/                  # ドキュメント
 ```
 
 ## 設定管理パターン
@@ -60,7 +62,7 @@ project_root/
 ### Pydantic Settingsの使用
 
 ```python
-from core.config import get_settings
+from market_pipeline.config import get_settings
 
 settings = get_settings()
 
@@ -154,7 +156,7 @@ def process_all_stocks(stock_codes):
 ### parallel_processor.pyの使用
 
 ```python
-from core.utils.parallel_processor import ParallelProcessor
+from market_pipeline.utils.parallel_processor import ParallelProcessor
 
 processor = ParallelProcessor(n_workers=8)
 results = processor.process(stock_codes, analyze_stock, batch_size=100)
@@ -396,8 +398,8 @@ dev = [
 
 ## 新機能追加時のチェックリスト
 
-1. [ ] `core/` に適切なモジュールを作成
-2. [ ] 設定が必要な場合は `core/config/settings.py` に追加
+1. [ ] `backend/market_pipeline/` に適切なモジュールを作成
+2. [ ] 設定が必要な場合は `backend/market_pipeline/config/settings.py` に追加
 3. [ ] テストを `tests/` に作成
 4. [ ] 必要に応じて `scripts/` に実行スクリプトを追加
 5. [ ] `CLAUDE.md` を更新

@@ -1,22 +1,15 @@
 import sqlite3
 import logging
 import os
-import sys
 from datetime import datetime, timedelta
 from typing import Optional, List
 
-# Add project root to sys.path
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, project_root)
-
-# Import optimized functions
-from core.analysis.high_low_ratio import calc_hl_ratio_for_all, init_hl_ratio_db  # noqa: E402
-from core.analysis.minervini import update_minervini_db, update_type8_db, init_minervini_db  # noqa: E402
-# Removed dependency on old minervini module
-from core.analysis.relative_strength import update_rsp_db, update_rsi_db, init_rsp_db  # noqa: E402
-from core.analysis.integrated_analysis import create_analysis_summary  # noqa: E402
-from core.analysis.chart_classification import main_full_run as run_chart_classification_full  # noqa: E402
-from core.utils.parallel_processor import measure_performance  # noqa: E402
+from market_pipeline.analysis.high_low_ratio import calc_hl_ratio_for_all, init_hl_ratio_db
+from market_pipeline.analysis.minervini import update_minervini_db, update_type8_db, init_minervini_db
+from market_pipeline.analysis.relative_strength import update_rsp_db, update_rsi_db, init_rsp_db
+from market_pipeline.analysis.integrated_analysis import create_analysis_summary
+from market_pipeline.analysis.chart_classification import main_full_run as run_chart_classification_full
+from market_pipeline.utils.parallel_processor import measure_performance
 
 
 class DatabaseManager:

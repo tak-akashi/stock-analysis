@@ -25,7 +25,7 @@ from typing import List
 # Add project root to sys.path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from core.analysis.integrated_analysis import get_comprehensive_analysis
+from market_pipeline.analysis.integrated_analysis import get_comprehensive_analysis
 
 # Ignore warnings for cleaner output
 warnings.filterwarnings('ignore')

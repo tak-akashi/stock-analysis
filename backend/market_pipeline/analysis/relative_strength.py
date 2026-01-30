@@ -12,7 +12,7 @@ from typing import List, Dict
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, project_root)
 
-from core.utils.parallel_processor import BatchDatabaseProcessor, measure_performance  # noqa: E402
+from market_pipeline.utils.parallel_processor import BatchDatabaseProcessor, measure_performance  # noqa: E402
 
 # --- Constants ---
 JQUANTS_DB_PATH = "/Users/tak/Markets/Stocks/Stock-Analysis/data/jquants.db"

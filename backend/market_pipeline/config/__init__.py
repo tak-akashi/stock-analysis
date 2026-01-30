@@ -2,7 +2,7 @@
 Configuration module for Stock-Analysis project.
 
 Usage:
-    from core.config import get_settings, Settings
+    from market_pipeline.config import get_settings, Settings
 
     settings = get_settings()
 
@@ -16,7 +16,7 @@ Usage:
     sma_period = settings.analysis.sma_short
 """
 
-from core.config.settings import (
+from market_pipeline.config.settings import (
     AnalysisSettings,
     DatabaseSettings,
     JQuantsAPISettings,

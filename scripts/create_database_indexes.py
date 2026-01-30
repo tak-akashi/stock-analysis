@@ -10,11 +10,7 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Tuple
 
-# Add project root to sys.path
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, project_root)
-
-from core.utils.parallel_processor import BatchDatabaseProcessor  # noqa: E402
+from market_pipeline.utils.parallel_processor import BatchDatabaseProcessor
 
 
 def setup_logging():

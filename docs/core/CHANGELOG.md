@@ -5,7 +5,7 @@
 ## [Unreleased]
 
 ### Added
-- `stock_reader/` パッケージ: pandas_datareader風のデータアクセスAPI
+- `backend/market_reader/` パッケージ: pandas_datareader風のデータアクセスAPI（旧 `stock_reader/`）
   - `DataReader`クラス: コンストラクタで `db_path` と `strict` パラメータをサポート
   - `get_prices()`: 単一/複数銘柄対応、日付自動デフォルト（end=DB最新日、start=5年前）
   - カラム選択: "simple"（OHLCV + AdjustmentClose）、"full"（全16カラム）、カスタムリスト
@@ -19,7 +19,9 @@
 - yfinanceからJ-Quantsデータ計算への切り替え (`refactor/yfinance-to-jquants`ブランチ)
 - FundamentalsCalculator: J-Quantsデータを使用した財務指標計算への移行
 - ドキュメント構造の再編成（`docs/refs/`、`docs/core/`）
-- `backend/` を `core/` にリネーム
+- リポジトリ構造のリファクタリング:
+  - `core/` → `backend/market_pipeline/` へ移動
+  - `stock_reader/` → `backend/market_reader/` へ移動
 - `notebook/` を `notebooks/` にリネーム
 
 ---

@@ -8,7 +8,7 @@ import sqlite3
 import tempfile
 from unittest.mock import patch, MagicMock
 
-from core.jquants.fundamentals_calculator import FundamentalsCalculator
+from market_pipeline.jquants.fundamentals_calculator import FundamentalsCalculator
 
 
 @pytest.fixture

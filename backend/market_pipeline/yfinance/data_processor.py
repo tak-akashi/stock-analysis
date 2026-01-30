@@ -18,7 +18,7 @@ import requests
 import yfinance as yf
 from bs4 import BeautifulSoup
 
-from core.config import get_settings
+from market_pipeline.config import get_settings
 
 warnings.filterwarnings("ignore")
 

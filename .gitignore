@@ -247,6 +247,7 @@ temp/*
 
 CLAUDE.md
 .claude/
+.steering/
 
 output/*
 !output/.gitkeep

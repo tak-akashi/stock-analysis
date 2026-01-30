@@ -137,7 +137,7 @@ class TestNormalizeCode:
 
     def test_normalize_code_4digit(self):
         """4-digit code should remain unchanged."""
-        from stock_reader.utils import normalize_code
+        from market_reader.utils import normalize_code
 
         assert normalize_code("7203") == "7203"
         assert normalize_code("9984") == "9984"
@@ -145,7 +145,7 @@ class TestNormalizeCode:
 
     def test_normalize_code_5digit(self):
         """5-digit code ending with 0 should be converted to 4-digit."""
-        from stock_reader.utils import normalize_code
+        from market_reader.utils import normalize_code
 
         assert normalize_code("72030") == "7203"
         assert normalize_code("99840") == "9984"
@@ -153,7 +153,7 @@ class TestNormalizeCode:
 
     def test_normalize_code_5digit_non_zero(self):
         """5-digit code not ending with 0 should remain unchanged."""
-        from stock_reader.utils import normalize_code
+        from market_reader.utils import normalize_code
 
         assert normalize_code("72031") == "72031"
         assert normalize_code("99845") == "99845"
@@ -169,7 +169,7 @@ class TestValidateDate:
 
     def test_validate_date_valid(self):
         """Valid date string should be converted to datetime."""
-        from stock_reader.utils import validate_date
+        from market_reader.utils import validate_date
 
         result = validate_date("2024-01-01")
         assert isinstance(result, datetime)
@@ -177,20 +177,20 @@ class TestValidateDate:
 
     def test_validate_date_none(self):
         """None input should return None."""
-        from stock_reader.utils import validate_date
+        from market_reader.utils import validate_date
 
         assert validate_date(None) is None
 
     def test_validate_date_invalid_format(self):
         """Invalid date format should raise ValueError."""
-        from stock_reader.utils import validate_date
+        from market_reader.utils import validate_date
 
         with pytest.raises(ValueError):
             validate_date("01-01-2024")  # Wrong format
 
     def test_validate_date_invalid_value(self):
         """Invalid date value should raise ValueError."""
-        from stock_reader.utils import validate_date
+        from market_reader.utils import validate_date
 
         with pytest.raises(ValueError):
             validate_date("2024-13-01")  # Invalid month
@@ -209,7 +209,7 @@ class TestGetPricesSingleCode:
 
     def test_get_prices_single_code(self, stock_reader_database):
         """Single code should return DataFrame with Date index."""
-        from stock_reader import DataReader
+        from market_reader import DataReader
 
         reader = DataReader(db_path=stock_reader_database)
         df = reader.get_prices("7203", start="2024-01-04", end="2024-01-10")
@@ -221,7 +221,7 @@ class TestGetPricesSingleCode:
 
     def test_get_prices_5digit_code(self, stock_reader_database):
         """5-digit code should be normalized and work correctly."""
-        from stock_reader import DataReader
+        from market_reader import DataReader
 
         reader = DataReader(db_path=stock_reader_database)
         df = reader.get_prices("72030", start="2024-01-04", end="2024-01-10")
@@ -230,7 +230,7 @@ class TestGetPricesSingleCode:
 
     def test_get_prices_date_index_type(self, stock_reader_database):
         """DataFrame index should be datetime type."""
-        from stock_reader import DataReader
+        from market_reader import DataReader
 
         reader = DataReader(db_path=stock_reader_database)
         df = reader.get_prices("7203", start="2024-01-04", end="2024-01-10")
@@ -248,7 +248,7 @@ class TestGetPricesMultipleCodes:
 
     def test_get_prices_multiple_codes(self, stock_reader_database):
         """Multiple codes should return MultiIndex DataFrame."""
-        from stock_reader import DataReader
+        from market_reader import DataReader
 
         reader = DataReader(db_path=stock_reader_database)
         df = reader.get_prices(
@@ -261,7 +261,7 @@ class TestGetPricesMultipleCodes:
 
     def test_get_prices_multiindex_access(self, stock_reader_database):
         """MultiIndex DataFrame should support date/code access."""
-        from stock_reader import DataReader
+        from market_reader import DataReader
 
         reader = DataReader(db_path=stock_reader_database)
         df = reader.get_prices(
@@ -274,7 +274,7 @@ class TestGetPricesMultipleCodes:
 
     def test_get_prices_code_normalized_in_output(self, stock_reader_database):
         """Output DataFrame should have 4-digit codes."""
-        from stock_reader import DataReader
+        from market_reader import DataReader
 
         reader = DataReader(db_path=stock_reader_database)
         df = reader.get_prices(
@@ -298,7 +298,7 @@ class TestGetPricesColumns:
 
     def test_get_prices_columns_simple(self, stock_reader_database):
         """columns='simple' should return 6 columns."""
-        from stock_reader import DataReader
+        from market_reader import DataReader
 
         reader = DataReader(db_path=stock_reader_database)
         df = reader.get_prices(
@@ -312,7 +312,7 @@ class TestGetPricesColumns:
 
     def test_get_prices_columns_full(self, stock_reader_database):
         """columns='full' should return all 16 columns."""
-        from stock_reader import DataReader
+        from market_reader import DataReader
 
         reader = DataReader(db_path=stock_reader_database)
         df = reader.get_prices(
@@ -325,7 +325,7 @@ class TestGetPricesColumns:
 
     def test_get_prices_columns_list(self, stock_reader_database):
         """columns as list should return specified columns only."""
-        from stock_reader import DataReader
+        from market_reader import DataReader
 
         reader = DataReader(db_path=stock_reader_database)
         df = reader.get_prices(
@@ -339,7 +339,7 @@ class TestGetPricesColumns:
 
     def test_get_prices_columns_invalid(self, stock_reader_database):
         """Invalid column name should raise ValueError."""
-        from stock_reader import DataReader
+        from market_reader import DataReader
 
         reader = DataReader(db_path=stock_reader_database)
 
@@ -364,7 +364,7 @@ class TestGetPricesDefaultDates:
 
     def test_get_prices_default_end_date(self, stock_reader_database):
         """Omitting end date should use latest date in DB."""
-        from stock_reader import DataReader
+        from market_reader import DataReader
 
         reader = DataReader(db_path=stock_reader_database)
         df = reader.get_prices("7203", start="2024-01-04")
@@ -374,7 +374,7 @@ class TestGetPricesDefaultDates:
 
     def test_get_prices_default_start_date(self, stock_reader_database):
         """Omitting start date should use 5 years before end date."""
-        from stock_reader import DataReader
+        from market_reader import DataReader
 
         reader = DataReader(db_path=stock_reader_database)
         # Since test data only has 5 days, this tests the mechanism
@@ -385,7 +385,7 @@ class TestGetPricesDefaultDates:
 
     def test_get_prices_empty_database_error(self, empty_database):
         """Empty database should raise ValueError for default dates."""
-        from stock_reader import DataReader
+        from market_reader import DataReader
 
         reader = DataReader(db_path=empty_database)
 
@@ -406,8 +406,8 @@ class TestStrictModeStockNotFound:
 
     def test_strict_mode_stock_not_found(self, stock_reader_database):
         """strict=True should raise StockNotFoundError for non-existent code."""
-        from stock_reader import DataReader
-        from stock_reader.exceptions import StockNotFoundError
+        from market_reader import DataReader
+        from market_reader.exceptions import StockNotFoundError
 
         reader = DataReader(db_path=stock_reader_database, strict=True)
 
@@ -422,7 +422,7 @@ class TestNonStrictModeStockNotFound:
 
     def test_non_strict_mode_stock_not_found(self, stock_reader_database):
         """strict=False should return empty DataFrame with UserWarning."""
-        from stock_reader import DataReader
+        from market_reader import DataReader
 
         reader = DataReader(db_path=stock_reader_database, strict=False)
 
@@ -446,8 +446,8 @@ class TestInvalidDateRange:
 
     def test_invalid_date_range(self, stock_reader_database):
         """Start date after end date should raise InvalidDateRangeError."""
-        from stock_reader import DataReader
-        from stock_reader.exceptions import InvalidDateRangeError
+        from market_reader import DataReader
+        from market_reader.exceptions import InvalidDateRangeError
 
         reader = DataReader(db_path=stock_reader_database, strict=True)
 
@@ -465,8 +465,8 @@ class TestDatabaseConnectionError:
 
     def test_database_connection_error(self, tmp_path):
         """Invalid DB path should raise DatabaseConnectionError."""
-        from stock_reader import DataReader
-        from stock_reader.exceptions import DatabaseConnectionError
+        from market_reader import DataReader
+        from market_reader.exceptions import DatabaseConnectionError
 
         invalid_path = tmp_path / "nonexistent" / "db.db"
 

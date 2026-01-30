@@ -3,14 +3,8 @@ import pytest
 import pandas as pd
 import sqlite3
 from datetime import datetime, timedelta
-import os
-import sys
 
-# Add project root to sys.path to allow imports from backend
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, project_root)
-
-from core.analysis.minervini import (  # noqa: E402
+from market_pipeline.analysis.minervini import (
     init_minervini_db,
     update_minervini_db
 )

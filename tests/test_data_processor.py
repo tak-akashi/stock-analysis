@@ -10,7 +10,7 @@ import shutil
 from unittest.mock import Mock, patch
 import pandas as pd
 
-from core.yfinance.data_processor import (
+from market_pipeline.yfinance.data_processor import (
     init_db,
     save_stock_info_to_db,
     download_tse_listed_stocks,
