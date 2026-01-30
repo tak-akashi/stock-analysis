@@ -154,7 +154,7 @@ def get_multi_date_analysis(start_date: str, end_date: str, code: str,
             logger.warning(f"No multi-date analysis data found for {code}")
             return pd.DataFrame()
             
-        df['date'] = pd.to_datetime(df['date'])
+        df['Date'] = pd.to_datetime(df['Date'])
         logger.info(f"Retrieved {len(df)} records for {code}")
         return df
         

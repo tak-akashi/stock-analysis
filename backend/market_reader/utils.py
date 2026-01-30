@@ -3,7 +3,7 @@
 import sqlite3
 from datetime import datetime
 
-from dateutil.relativedelta import relativedelta  # type: ignore[import-untyped]
+from dateutil.relativedelta import relativedelta
 
 
 def normalize_code(code: str) -> str:

@@ -34,7 +34,7 @@ import logging
 import os
 import sqlite3
 from datetime import datetime, timedelta
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 import time
 
 import matplotlib.pyplot as plt
@@ -95,7 +95,7 @@ class BatchDataLoader:
     def __init__(self, db_path: str, logger: logging.Logger):
         self.db_path = db_path
         self.logger = logger
-        self._data_cache = {}
+        self._data_cache: Dict[str, pd.Series] = {}
     
     def load_all_ticker_data(self, tickers: List[str], days: int = 500) -> Dict[str, pd.Series]:
         """Load data for all tickers in a single optimized query"""
@@ -168,7 +168,7 @@ class BatchResultsProcessor:
         self.db_path = db_path
         self.logger = logger
         self.batch_size = batch_size
-        self.pending_results = []
+        self.pending_results: List[Tuple[str, str, int, str, float]] = []
     
     def add_result(self, date: str, ticker: str, window: int, label: str, score: float):
         """Add a result to the pending batch"""
@@ -212,7 +212,7 @@ class OptimizedChartClassifier:
     """
 
     # Class-level template cache to avoid recreating templates for each instance
-    _template_cache = {}
+    _template_cache: Dict[int, Dict[str, np.ndarray]] = {}
 
     def __init__(self, ticker: str, window: int, price_data: Optional[pd.Series] = None, logger: Optional[logging.Logger] = None):
         self.ticker = ticker

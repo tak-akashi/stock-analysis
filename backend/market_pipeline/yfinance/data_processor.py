@@ -10,7 +10,7 @@ import sqlite3
 import time
 import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from urllib.parse import urljoin
 
 import pandas as pd
@@ -35,7 +35,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Ensure data directory exists
-_settings.paths.data_dir.mkdir(parents=True, exist_ok=True)
+if _settings.paths.data_dir is not None:
+    _settings.paths.data_dir.mkdir(parents=True, exist_ok=True)
 
 
 def init_db(db_path: str):
@@ -96,7 +97,7 @@ def init_db(db_path: str):
             conn.close()
 
 
-def save_stock_info_to_db(info: Dict[str, Any], db_path: str = None):
+def save_stock_info_to_db(info: Dict[str, Any], db_path: Optional[str] = None) -> None:
     """yfinanceのticker.infoをデータベースに保存（または更新）する"""
     if db_path is None:
         db_path = DB_PATH
@@ -207,7 +208,7 @@ def download_tse_listed_stocks():
 
 
 def fetch_and_store_tse_data(
-    max_workers: int = None, delay: float = None, db_path: str = None
+    max_workers: Optional[int] = None, delay: Optional[float] = None, db_path: Optional[str] = None
 ) -> None:
     """Fetch all TSE stock data and store in SQLite database."""
     settings = get_settings()
@@ -311,7 +312,7 @@ class TSEDataProcessor:
     """TSE stock data processor with configurable rate limiting."""
 
     def __init__(
-        self, max_workers: int = None, rate_limit_delay: float = None, db_path: str = None
+        self, max_workers: Optional[int] = None, rate_limit_delay: Optional[float] = None, db_path: Optional[str] = None
     ):
         """
         Initialize the processor.
@@ -327,7 +328,8 @@ class TSEDataProcessor:
         self.rate_limit_delay = rate_limit_delay or settings.yfinance.rate_limit_delay
         self.db_path = db_path or str(settings.paths.yfinance_db)
 
-        settings.paths.data_dir.mkdir(parents=True, exist_ok=True)
+        if settings.paths.data_dir is not None:
+            settings.paths.data_dir.mkdir(parents=True, exist_ok=True)
         init_db(self.db_path)
 
     def run(self) -> None:

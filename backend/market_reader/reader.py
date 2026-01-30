@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Generator
 
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 
 from .exceptions import (
     DatabaseConnectionError,
@@ -150,7 +150,7 @@ class DataReader:
         end: str,
         columns: list[str],
         is_multiple: bool,
-    ) -> tuple[str, list[str]]:
+    ) -> tuple[str, tuple[str, ...]]:
         """Build SQL query with parameter binding.
 
         Args:
@@ -173,13 +173,14 @@ class DataReader:
         select_clause = ", ".join(select_cols)
 
         # Build WHERE clause with parameter binding
+        params: tuple[str, ...]
         if len(codes) == 1:
             where_code = "Code = ?"
-            params = [codes[0], start, end]
+            params = (codes[0], start, end)
         else:
             placeholders = ", ".join("?" * len(codes))
             where_code = f"Code IN ({placeholders})"
-            params = codes + [start, end]
+            params = tuple(codes) + (start, end)
 
         query = f"""
             SELECT {select_clause}

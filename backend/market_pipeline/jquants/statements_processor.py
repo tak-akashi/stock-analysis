@@ -14,7 +14,7 @@ import sys
 import time
 from datetime import datetime
 from dotenv import load_dotenv
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple, Any, cast
 from pathlib import Path
 
 # Add project root to sys.path
@@ -98,7 +98,7 @@ class JQuantsStatementsProcessor:
             return pd.DataFrame(cached_data)
 
         self.logger.info("Fetching listed company info from API...")
-        params = {}
+        params: Dict[str, str] = {}
         res = requests.get(f"{API_URL}/v1/listed/info", params=params, headers=self._headers)
 
         if res.status_code != 200:
@@ -191,12 +191,12 @@ class JQuantsStatementsProcessor:
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
             # Filter out exceptions
-            valid_results = []
+            valid_results: List[Tuple[str, List[Dict[Any, Any]]]] = []
             for result in results:
                 if isinstance(result, Exception):
                     self.logger.error(f"Task failed with exception: {result}")
                 else:
-                    valid_results.append(result)
+                    valid_results.append(cast(Tuple[str, List[Dict[Any, Any]]], result))
 
             return valid_results
 

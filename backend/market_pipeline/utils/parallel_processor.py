@@ -6,9 +6,10 @@ Provides reusable framework for parallel execution of stock-level calculations.
 import logging
 import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
-from typing import List, Callable, Any, Dict, Optional, Tuple, Union
+from typing import List, Callable, Any, Dict, Optional, Tuple, Union, cast
 import pandas as pd
 import numpy as np
+from numpy.typing import NDArray
 from tqdm import tqdm
 import time
 import sqlite3
@@ -154,12 +155,12 @@ class ParallelProcessor:
             df_chunks = [df.iloc[:, i::n_workers] for i in range(n_workers)]
         
         with ProcessPoolExecutor(max_workers=n_workers) as executor:
-            results = list(executor.map(func, df_chunks))
-        
+            results: List[pd.DataFrame] = list(executor.map(func, df_chunks))
+
         if axis == 0:
-            return pd.concat(results, axis=0, ignore_index=True)
+            return cast(pd.DataFrame, pd.concat(results, axis=0, ignore_index=True))
         else:
-            return pd.concat(results, axis=1)
+            return cast(pd.DataFrame, pd.concat(results, axis=1))
 
 
 class BatchDatabaseProcessor:

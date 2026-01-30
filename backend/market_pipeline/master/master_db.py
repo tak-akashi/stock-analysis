@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class StockMasterDB:
-    def __init__(self, db_path: str = None):
+    def __init__(self, db_path: Optional[str] = None):
         """
         銘柄マスターデータベースの初期化
         
@@ -76,8 +76,8 @@ class StockMasterDB:
             soup = BeautifulSoup(response.content, "html.parser")
             excel_link = soup.find("a", href=lambda href: href and (".xls" in href or ".xlsx" in href))
 
-            if excel_link:
-                excel_url = urljoin(url, excel_link["href"])
+            if excel_link and excel_link.get("href"):
+                excel_url = urljoin(url, str(excel_link["href"]))
                 excel_response = requests.get(excel_url)
                 excel_response.raise_for_status()
                 
@@ -250,10 +250,10 @@ class StockMasterDB:
             query += " AND is_active = 1"
         
         query += " ORDER BY code"
-        
+
         with sqlite3.connect(self.db_path) as conn:
-            return pd.read_sql_query(query, conn, params=params)
-    
+            return pd.read_sql_query(query, conn, params=tuple(params))
+
     def get_stocks_by_market(self, market: str, active_only: bool = True) -> pd.DataFrame:
         """
         市場で銘柄を取得
@@ -272,10 +272,10 @@ class StockMasterDB:
             query += " AND is_active = 1"
         
         query += " ORDER BY code"
-        
+
         with sqlite3.connect(self.db_path) as conn:
-            return pd.read_sql_query(query, conn, params=params)
-    
+            return pd.read_sql_query(query, conn, params=tuple(params))
+
     def get_statistics(self) -> Dict[str, Any]:
         """
         マスターデータの統計情報を取得

@@ -14,6 +14,13 @@
   - ユーティリティ関数: `normalize_code()`, `to_5digit_code()`, `validate_date()`
   - PRAGMA最適化（WALモード、キャッシュ設定）
 - `notebooks/` ディレクトリ: 分析・可視化用Jupyterノートブック
+- `py.typed` マーカーファイル: PEP 561準拠の型ヒントサポート
+  - `backend/market_pipeline/py.typed`
+  - `backend/market_reader/py.typed`
+- パフォーマンスベンチマークファイル（テストから分離）:
+  - `tests/benchmark_integrated_analysis_optimization.py`
+  - `tests/benchmark_jquants_performance.py`
+  - `tests/benchmark_optimizations.py`
 
 ### Changed
 - yfinanceからJ-Quantsデータ計算への切り替え (`refactor/yfinance-to-jquants`ブランチ)
@@ -23,6 +30,15 @@
   - `core/` → `backend/market_pipeline/` へ移動
   - `stock_reader/` → `backend/market_reader/` へ移動
 - `notebook/` を `notebooks/` にリネーム
+- テストファイルの整理:
+  - パフォーマンステストを `benchmark_*.py` に分離
+  - `test_functions.py` を削除（機能を他のテストに統合）
+
+### Removed
+- `tests/test_functions.py` - 他のテストファイルに統合
+- `tests/test_integrated_analysis_optimization.py` - ベンチマークに移行
+- `tests/test_jquants_performance.py` - ベンチマークに移行
+- `tests/test_optimizations.py` - ベンチマークに移行
 
 ---
 

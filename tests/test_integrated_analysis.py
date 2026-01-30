@@ -30,11 +30,12 @@ class TestIntegratedAnalysis:
         # Create tables
         conn.execute("""
         CREATE TABLE hl_ratio (
-            date TEXT NOT NULL,
-            code TEXT NOT NULL,
-            hl_ratio REAL NOT NULL,
-            weeks INTEGER NOT NULL,
-            PRIMARY KEY (date, code, weeks)
+            Date TEXT NOT NULL,
+            Code TEXT NOT NULL,
+            HlRatio REAL NOT NULL,
+            MedianRatio REAL NOT NULL,
+            Weeks INTEGER NOT NULL,
+            PRIMARY KEY (Date, Code)
         )
         """)
         
@@ -59,11 +60,11 @@ class TestIntegratedAnalysis:
         
         conn.execute("""
         CREATE TABLE relative_strength (
-            date TEXT,
-            code TEXT,
-            relative_strength_percentage REAL,
-            relative_strength_index REAL,
-            PRIMARY KEY (date, code)
+            Date TEXT NOT NULL,
+            Code TEXT NOT NULL,
+            RelativeStrengthPercentage REAL,
+            RelativeStrengthIndex REAL,
+            PRIMARY KEY (Date, Code)
         )
         """)
         
@@ -74,10 +75,11 @@ class TestIntegratedAnalysis:
         for i, code in enumerate(codes):
             # HL ratio data
             hl_ratio = 90 - (i * 10)  # 90, 80, 70, 60, 50
+            median_ratio = 50.0 + (i * 5)  # Different median ratios for testing
             conn.execute("""
-            INSERT INTO hl_ratio (date, code, hl_ratio, weeks)
-            VALUES (?, ?, ?, ?)
-            """, (test_date, code, hl_ratio, 52))
+            INSERT INTO hl_ratio (Date, Code, HlRatio, MedianRatio, Weeks)
+            VALUES (?, ?, ?, ?, ?)
+            """, (test_date, code, hl_ratio, median_ratio, 52))
             
             # Minervini data
             close_price = 100 + i * 10
@@ -98,7 +100,7 @@ class TestIntegratedAnalysis:
             rsp = i * 2.0  # 0, 2, 4, 6, 8
             rsi = 95 - (i * 15)  # 95, 80, 65, 50, 35
             conn.execute("""
-            INSERT INTO relative_strength (date, code, relative_strength_percentage, relative_strength_index)
+            INSERT INTO relative_strength (Date, Code, RelativeStrengthPercentage, RelativeStrengthIndex)
             VALUES (?, ?, ?, ?)
             """, (test_date, code, rsp, rsi))
         
@@ -108,10 +110,11 @@ class TestIntegratedAnalysis:
             
             for i, code in enumerate(['1001', '1002']):  # Just two codes for time series
                 hl_ratio = 80 + days_back + i * 5
+                median_ratio = 50.0 + days_back
                 conn.execute("""
-                INSERT INTO hl_ratio (date, code, hl_ratio, weeks)
-                VALUES (?, ?, ?, ?)
-                """, (test_date_ts, code, hl_ratio, 52))
+                INSERT INTO hl_ratio (Date, Code, HlRatio, MedianRatio, Weeks)
+                VALUES (?, ?, ?, ?, ?)
+                """, (test_date_ts, code, hl_ratio, median_ratio, 52))
                 
                 close_price = 95 + days_back + i * 10
                 conn.execute("""
@@ -123,7 +126,7 @@ class TestIntegratedAnalysis:
                 rsp = days_back + i * 2
                 rsi = 75 + days_back + i * 5
                 conn.execute("""
-                INSERT INTO relative_strength (date, code, relative_strength_percentage, relative_strength_index)
+                INSERT INTO relative_strength (Date, Code, RelativeStrengthPercentage, RelativeStrengthIndex)
                 VALUES (?, ?, ?, ?)
                 """, (test_date_ts, code, rsp, rsi))
         
@@ -141,13 +144,13 @@ class TestIntegratedAnalysis:
         
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 5  # Should have 5 stocks
-        assert 'hl_ratio' in result.columns
+        assert 'HlRatio' in result.columns
         assert 'minervini_score' in result.columns
-        assert 'relative_strength_index' in result.columns
+        assert 'RelativeStrengthIndex' in result.columns
         assert 'composite_score' in result.columns
-        
+
         # Check that results are sorted by HL ratio descending
-        assert result['hl_ratio'].iloc[0] >= result['hl_ratio'].iloc[1]
+        assert result['HlRatio'].iloc[0] >= result['HlRatio'].iloc[1]
         
     def test_get_comprehensive_analysis_single_code(self, temp_results_database):
         """Test comprehensive analysis for a single code"""
@@ -155,8 +158,8 @@ class TestIntegratedAnalysis:
         
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 1
-        assert result['code'].iloc[0] == '1001'
-        assert result['hl_ratio'].iloc[0] == 90.0
+        assert result['Code'].iloc[0] == '1001'
+        assert result['HlRatio'].iloc[0] == 90.0
         
     def test_get_comprehensive_analysis_no_data(self, temp_results_database):
         """Test comprehensive analysis with no data"""
@@ -171,12 +174,12 @@ class TestIntegratedAnalysis:
         
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 6  # 5 historical days + 1 current day
-        assert all(result['code'] == '1001')
-        assert 'date' in result.columns
+        assert all(result['Code'] == '1001')
+        assert 'Date' in result.columns
         assert 'minervini_score' in result.columns
-        
+
         # Check that dates are in ascending order
-        dates = pd.to_datetime(result['date'])
+        dates = pd.to_datetime(result['Date'])
         assert dates.is_monotonic_increasing
     
     def test_get_multi_date_analysis_no_data(self, temp_results_database):
@@ -192,10 +195,10 @@ class TestIntegratedAnalysis:
         
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 3
-        
+
         # Should be sorted by HL ratio descending
-        assert result['hl_ratio'].iloc[0] >= result['hl_ratio'].iloc[1]
-        assert result['hl_ratio'].iloc[1] >= result['hl_ratio'].iloc[2]
+        assert result['HlRatio'].iloc[0] >= result['HlRatio'].iloc[1]
+        assert result['HlRatio'].iloc[1] >= result['HlRatio'].iloc[2]
     
     def test_get_top_stocks_by_rsi(self, temp_results_database):
         """Test getting top stocks by RSI"""
@@ -203,9 +206,9 @@ class TestIntegratedAnalysis:
         
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 3
-        
+
         # Should be sorted by RSI descending
-        rsi_values = result['relative_strength_index'].dropna()
+        rsi_values = result['RelativeStrengthIndex'].dropna()
         assert rsi_values.iloc[0] >= rsi_values.iloc[1]
     
     def test_get_top_stocks_by_minervini(self, temp_results_database):
@@ -249,8 +252,8 @@ class TestIntegratedAnalysis:
         
         # All returned stocks should meet the criteria
         if not result.empty:
-            assert all(result['hl_ratio'] >= 70.0)
-            assert all(result['relative_strength_index'] >= 60.0)
+            assert all(result['HlRatio'] >= 70.0)
+            assert all(result['RelativeStrengthIndex'] >= 60.0)
             assert all(result['minervini_score'] >= 2)
     
     def test_get_stocks_meeting_strict_criteria(self, temp_results_database):
@@ -317,8 +320,8 @@ class TestIntegratedAnalysis:
         """Test composite score calculation"""
         # Create sample DataFrame
         data = {
-            'hl_ratio': [90, 80, 70],
-            'relative_strength_index': [95, 85, 75],
+            'HlRatio': [90, 80, 70],
+            'RelativeStrengthIndex': [95, 85, 75],
             'minervini_type_1': [1, 1, 0],
             'minervini_type_2': [1, 1, 0],
             'minervini_type_3': [1, 0, 0],
@@ -350,8 +353,8 @@ class TestIntegratedAnalysis:
     def test_calculate_composite_scores_with_nan(self):
         """Test composite score calculation with NaN values"""
         data = {
-            'hl_ratio': [90, np.nan, 70],
-            'relative_strength_index': [95, 85, np.nan],
+            'HlRatio': [90, np.nan, 70],
+            'RelativeStrengthIndex': [95, 85, np.nan],
             'minervini_type_1': [1, np.nan, 0],
             'minervini_type_2': [1, 1, 0],
             'minervini_type_3': [1, 0, 0],

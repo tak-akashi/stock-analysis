@@ -15,7 +15,7 @@ import time
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from dotenv import load_dotenv
-from typing import Optional, List, Dict, Tuple, Any
+from typing import Optional, List, Dict, Tuple, Any, cast
 from pathlib import Path
 
 # Add project root to sys.path
@@ -58,9 +58,9 @@ class JQuantsDataProcessor:
         
         # Cache manager
         self.cache = get_cache()
-        
+
         # Database processor
-        self.db_processor = None
+        self.db_processor: Optional[BatchDatabaseProcessor] = None
         
         # Initialize tokens
         self._refresh_token = self._get_refresh_token()
@@ -106,7 +106,7 @@ class JQuantsDataProcessor:
             return pd.DataFrame(cached_data)
         
         self.logger.info("Fetching listed company info from API...")
-        params = {}
+        params: Dict[str, str] = {}
         res = requests.get(f"{API_URL}/v1/listed/info", params=params, headers=self._headers)
         
         if res.status_code != 200:
@@ -201,13 +201,13 @@ class JQuantsDataProcessor:
             results = await asyncio.gather(*tasks, return_exceptions=True)
             
             # Filter out exceptions
-            valid_results = []
+            valid_results: List[Tuple[str, pd.DataFrame]] = []
             for result in results:
                 if isinstance(result, Exception):
                     self.logger.error(f"Task failed with exception: {result}")
                 else:
-                    valid_results.append(result)
-            
+                    valid_results.append(cast(Tuple[str, pd.DataFrame], result))
+
             return valid_results
 
     def get_last_dates_batch(self, db_path: str, codes: List[str]) -> Dict[str, str]:
@@ -409,7 +409,7 @@ class JQuantsDataProcessor:
             return
         
         # Group codes by date range for efficient processing
-        date_groups = {}
+        date_groups: Dict[str, List[str]] = {}
         for code, from_date in codes_to_update:
             if from_date not in date_groups:
                 date_groups[from_date] = []

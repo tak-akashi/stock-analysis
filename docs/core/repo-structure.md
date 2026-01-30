@@ -9,6 +9,7 @@ Stock-Analysis/
 │   │
 │   ├── market_pipeline/              # コアロジックとデータ処理（旧core/）
 │   │   ├── __init__.py
+│   │   ├── py.typed                      # PEP 561型ヒントマーカー
 │   │   ├── analysis/                     # 分析アルゴリズム
 │   │   │   ├── __init__.py
 │   │   │   ├── minervini.py              # ミネルヴィニトレンドスクリーニング
@@ -48,6 +49,7 @@ Stock-Analysis/
 │   │
 │   └── market_reader/                    # pandas_datareader風データアクセスAPI（旧stock_reader/）
 │       ├── __init__.py                   # パッケージエクスポート
+│       ├── py.typed                      # PEP 561型ヒントマーカー
 │       ├── reader.py                     # DataReaderクラス実装
 │       ├── utils.py                      # ユーティリティ関数
 │       └── exceptions.py                 # カスタム例外クラス
@@ -70,19 +72,19 @@ Stock-Analysis/
 │   ├── test_relative_strength.py
 │   ├── test_chart_classification.py
 │   ├── test_integrated_analysis.py
-│   ├── test_integrated_analysis_optimization.py
 │   ├── test_jquants_data_processor.py
-│   ├── test_jquants_performance.py
 │   ├── test_statements_processor.py
 │   ├── test_fundamentals_calculator.py
 │   ├── test_data_processor.py        # yfinance（レガシー）
 │   ├── test_analysis_integration.py
 │   ├── test_type8_optimization.py
 │   ├── test_rsi_optimization.py
-│   ├── test_optimizations.py
-│   ├── test_functions.py
 │   ├── test_fixes.py
-│   └── simple_test.py
+│   ├── test_stock_reader.py          # market_readerパッケージテスト
+│   ├── simple_test.py
+│   ├── benchmark_integrated_analysis_optimization.py  # パフォーマンスベンチマーク
+│   ├── benchmark_jquants_performance.py               # J-Quantsパフォーマンスベンチマーク
+│   └── benchmark_optimizations.py                     # 最適化ベンチマーク
 │
 ├── data/                             # SQLiteデータベース
 │   ├── jquants.db                    # 日次株価（820MB）
@@ -111,6 +113,8 @@ Stock-Analysis/
 │   │   ├── OPTIMIZATION_TECHNIQUES_GUIDE.md
 │   │   ├── JQUANTS_OPTIMIZATION_README.md
 │   │   └── ANALYSIS_OPTIMIZATION_README.md
+│   ├── plan/                         # 実装計画ドキュメント
+│   │   └── *.md
 │   └── ideas/                        # アイデア・検討用ドキュメント
 │
 ├── notebooks/                        # Jupyter Notebook（分析・可視化用）
@@ -185,12 +189,25 @@ Stock-Analysis/
 | `tests/test_high_low_ratio.py` | HL比率 |
 | `tests/test_relative_strength.py` | RSP/RSI |
 | `tests/test_chart_classification.py` | チャートパターン分類 |
+| `tests/test_integrated_analysis.py` | 統合分析 |
+| `tests/test_analysis_integration.py` | 分析モジュール統合テスト |
 | `tests/test_statements_processor.py` | 財務諸表処理 |
 | `tests/test_fundamentals_calculator.py` | 財務指標計算 |
 | `tests/test_jquants_data_processor.py` | J-Quants API |
-| `tests/test_jquants_performance.py` | パフォーマンステスト |
-| `tests/test_stock_reader.py` | market_readerパッケージ（注: パッケージ名変更後もテストファイル名は未変更） |
+| `tests/test_data_processor.py` | yfinanceデータ処理（レガシー） |
+| `tests/test_stock_reader.py` | market_readerパッケージ |
+| `tests/test_type8_optimization.py` | Type8最適化 |
+| `tests/test_rsi_optimization.py` | RSI最適化 |
+| `tests/test_fixes.py` | バグ修正検証 |
 | `tests/simple_test.py` | 簡易テスト |
+
+### ベンチマークファイル
+
+| ファイル | 対象 |
+|---------|-----|
+| `tests/benchmark_integrated_analysis_optimization.py` | 統合分析パフォーマンス |
+| `tests/benchmark_jquants_performance.py` | J-Quantsデータ取得パフォーマンス |
+| `tests/benchmark_optimizations.py` | 各種最適化パフォーマンス |
 
 ## ディレクトリ命名規則
 

@@ -61,8 +61,8 @@ def mock_api_responses():
 @pytest.fixture
 def mock_requests():
     """Mock requests.post and requests.get for authentication."""
-    with patch('backend.jquants.statements_processor.requests.post') as mock_post, \
-         patch('backend.jquants.statements_processor.requests.get') as mock_get:
+    with patch('market_pipeline.jquants.statements_processor.requests.post') as mock_post, \
+         patch('market_pipeline.jquants.statements_processor.requests.get') as mock_get:
         # auth_user のレスポンス
         def post_side_effect(url, data=None, params=None, headers=None):
             if "auth_user" in url:

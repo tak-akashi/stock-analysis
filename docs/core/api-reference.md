@@ -381,37 +381,134 @@ ROA（総資産利益率）を計算。
 
 ## 分析モジュール (`backend/market_pipeline/analysis/`)
 
-### MinerviniAnalyzer
+### MinerviniConfig
 
-マーク・ミネルヴィニのトレンドスクリーニング戦略。
+ミネルヴィニ分析の設定クラス。
 
 ```python
-from market_pipeline.analysis.minervini import MinerviniAnalyzer
+from market_pipeline.analysis.minervini import MinerviniConfig
 
-analyzer = MinerviniAnalyzer(db_path)
-results = analyzer.analyze(stock_codes, date)
+config = MinerviniConfig(base_dir=Path("/path/to/project"))
 ```
 
 #### コンストラクタ
 
 ```python
-MinerviniAnalyzer(db_path: str | Path)
+MinerviniConfig(base_dir: Optional[Path] = None)
 ```
 
 **パラメータ**:
-- `db_path`: jquants.dbのパス
+- `base_dir`: プロジェクトルートディレクトリ（省略時はデフォルトパス）
+
+**属性**:
+- `base_dir`: プロジェクトルートディレクトリ
+- `data_dir`: データディレクトリ (`base_dir/data`)
+- `logs_dir`: ログディレクトリ (`base_dir/logs`)
+- `output_dir`: 出力ディレクトリ (`base_dir/output`)
+- `jquants_db_path`: J-Quants DB パス
+- `results_db_path`: 分析結果DB パス
+- `error_output_dir`: エラー出力ディレクトリ
+
+### MinerviniAnalyzer
+
+マーク・ミネルヴィニのトレンドスクリーニング戦略。ベクトル化演算による最適化実装。
+
+```python
+from market_pipeline.analysis.minervini import MinerviniAnalyzer, MinerviniConfig
+
+config = MinerviniConfig()
+analyzer = MinerviniAnalyzer(config)
+results = analyzer.calculate_strategy_vectorized(df)
+```
+
+#### コンストラクタ
+
+```python
+MinerviniAnalyzer(config: MinerviniConfig)
+```
+
+**パラメータ**:
+- `config`: MinerviniConfigインスタンス
 
 #### メソッド
 
-##### `analyze(stock_codes, date) -> pd.DataFrame`
+##### `calculate_strategy_vectorized(df: pd.DataFrame) -> pd.DataFrame`
 
-指定日時点でのミネルヴィニ条件チェック。
+ベクトル化演算によるミネルヴィニ条件の計算。
 
 **パラメータ**:
-- `stock_codes` (`list[str]`): 銘柄コードリスト
-- `date` (`str`): 分析日 (YYYY-MM-DD)
+- `df` (`pd.DataFrame`): DateインデックスとAdjustmentCloseカラムを持つDataFrame
 
-**戻り値**: `pd.DataFrame` - 各条件の合否とスコア
+**戻り値**: `pd.DataFrame` - 以下のカラムを含むDataFrame
+
+| カラム | 説明 |
+|--------|------|
+| `Close` | 終値 |
+| `Sma50` | 50日移動平均 |
+| `Sma150` | 150日移動平均 |
+| `Sma200` | 200日移動平均 |
+| `Type_1` | 株価が150日・200日MAより上（1.0/0.0） |
+| `Type_2` | 150日MAが200日MAより上（1.0/0.0） |
+| `Type_3` | 200日MAが1ヶ月間上昇トレンド（1.0/0.0） |
+| `Type_4` | 50日MAが150日・200日MAより上（1.0/0.0） |
+| `Type_5` | 株価が50日MAより上（1.0/0.0） |
+| `Type_6` | 株価が52週安値の130%以上（1.0/0.0） |
+| `Type_7` | 株価が52週高値の75%以上（1.0/0.0） |
+| `Type_8` | RSI >= 70（別途計算、初期値NaN） |
+
+### MinerviniDatabase
+
+ミネルヴィニ分析のデータベース操作クラス。
+
+```python
+from market_pipeline.analysis.minervini import MinerviniDatabase, MinerviniConfig
+
+config = MinerviniConfig()
+database = MinerviniDatabase(config)
+database.init_database(source_db_path, dest_db_path, code_list)
+```
+
+#### コンストラクタ
+
+```python
+MinerviniDatabase(config: MinerviniConfig)
+```
+
+**パラメータ**:
+- `config`: MinerviniConfigインスタンス
+
+#### メソッド
+
+##### `init_minervini_table(dest_db_path: str)`
+
+Minerviniテーブルとインデックスを初期化。
+
+##### `init_database(source_db_path: str, dest_db_path: str, code_list: List[str], n_workers: Optional[int] = None)`
+
+全銘柄のMinerviniデータベースを並列処理で初期化。
+
+##### `update_database(source_db_path: str, dest_db_path: str, code_list: List[str], calc_start_date: str, calc_end_date: str, period: int = 5)`
+
+Minerviniデータベースを更新。
+
+##### `update_type8(dest_db_path: str, date_list: List[str], period: int = -5)`
+
+Type 8（相対力指数）をバッチ操作で更新。
+
+### 後方互換関数
+
+```python
+from market_pipeline.analysis.minervini import init_minervini_db, update_minervini_db, update_type8_db
+
+# 初期化（SQLite接続オブジェクト使用）
+init_minervini_db(source_conn, dest_conn, code_list, n_workers)
+
+# 更新
+update_minervini_db(source_conn, dest_conn, code_list, calc_start_date, calc_end_date, period)
+
+# Type 8更新
+update_type8_db(conn, date_list, period)
+```
 
 ### High-Low Ratio 関数 (`backend/market_pipeline/analysis/high_low_ratio.py`)
 
