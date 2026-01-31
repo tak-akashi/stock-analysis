@@ -251,3 +251,10 @@ CLAUDE.md
 
 output/*
 !output/.gitkeep
+
+docs/ideas/**
+!docs/ideas/.gitkeep
+docs/plan/**
+!docs/plan/.gitkeep
+docs/refs/**
+!docs/refs/.gitkeep
