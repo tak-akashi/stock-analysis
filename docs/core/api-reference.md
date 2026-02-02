@@ -218,6 +218,259 @@ DataReader(db_path: str | Path | None = None, strict: bool = False)
 
 ---
 
+## Technical Tools パッケージ (`backend/technical_tools/`)
+
+Jupyter Notebook用のテクニカル分析ツール。日本株(J-Quants)と米国株(yfinance)の統一インターフェースを提供。
+
+### TechnicalAnalyzer
+
+```python
+from technical_tools import TechnicalAnalyzer
+
+analyzer = TechnicalAnalyzer(source="jquants")
+fig = analyzer.plot_chart("7203", show_sma=[25, 75], show_rsi=True)
+fig.show()
+```
+
+#### コンストラクタ
+
+```python
+TechnicalAnalyzer(source: Literal["jquants", "yfinance"] = "jquants")
+```
+
+**パラメータ**:
+- `source`: データソース（"jquants" または "yfinance"）
+
+#### メソッド
+
+##### `get_prices(ticker, start=None, end=None, **kwargs) -> pd.DataFrame`
+
+株価データを取得（キャッシュ付き）。
+
+**パラメータ**:
+- `ticker` (`str`): 銘柄コード
+- `start` (`str | None`): 開始日 (YYYY-MM-DD)
+- `end` (`str | None`): 終了日 (YYYY-MM-DD)
+- `**kwargs`: 追加引数（`period` など）
+
+**戻り値**: `pd.DataFrame` - OHLCV列を持つDataFrame
+
+##### `calculate_indicators(ticker, indicators, start=None, end=None, **kwargs) -> pd.DataFrame`
+
+複数のテクニカル指標を計算。
+
+**パラメータ**:
+- `ticker` (`str`): 銘柄コード
+- `indicators` (`list[str]`): 指標リスト（"sma", "ema", "rsi", "macd", "bb"）
+- `start` (`str | None`): 開始日
+- `end` (`str | None`): 終了日
+
+**戻り値**: `pd.DataFrame` - 指標列が追加されたDataFrame
+
+##### `add_sma(ticker, periods, start=None, end=None, **kwargs) -> pd.DataFrame`
+
+単純移動平均を追加。
+
+**パラメータ**:
+- `ticker` (`str`): 銘柄コード
+- `periods` (`list[int]`): SMA期間リスト
+
+**戻り値**: `pd.DataFrame` - `SMA_N`列が追加されたDataFrame
+
+##### `add_ema(ticker, periods, start=None, end=None, **kwargs) -> pd.DataFrame`
+
+指数移動平均を追加。
+
+**パラメータ**:
+- `ticker` (`str`): 銘柄コード
+- `periods` (`list[int]`): EMA期間リスト
+
+**戻り値**: `pd.DataFrame` - `EMA_N`列が追加されたDataFrame
+
+##### `add_rsi(ticker, period=14, start=None, end=None, **kwargs) -> pd.DataFrame`
+
+RSIを追加。
+
+**パラメータ**:
+- `ticker` (`str`): 銘柄コード
+- `period` (`int`): RSI期間（デフォルト: 14）
+
+**戻り値**: `pd.DataFrame` - `RSI_N`列が追加されたDataFrame
+
+##### `add_macd(ticker, fast=12, slow=26, signal=9, start=None, end=None, **kwargs) -> pd.DataFrame`
+
+MACDを追加。
+
+**パラメータ**:
+- `ticker` (`str`): 銘柄コード
+- `fast` (`int`): 短期EMA期間（デフォルト: 12）
+- `slow` (`int`): 長期EMA期間（デフォルト: 26）
+- `signal` (`int`): シグナル線期間（デフォルト: 9）
+
+**戻り値**: `pd.DataFrame` - `MACD`, `MACD_Signal`, `MACD_Hist`列が追加されたDataFrame
+
+##### `add_bollinger_bands(ticker, period=20, std=2.0, start=None, end=None, **kwargs) -> pd.DataFrame`
+
+ボリンジャーバンドを追加。
+
+**パラメータ**:
+- `ticker` (`str`): 銘柄コード
+- `period` (`int`): 移動平均期間（デフォルト: 20）
+- `std` (`float`): 標準偏差倍率（デフォルト: 2.0）
+
+**戻り値**: `pd.DataFrame` - `BB_Upper`, `BB_Middle`, `BB_Lower`列が追加されたDataFrame
+
+##### `detect_crosses(ticker, short=5, long=25, patterns=None, start=None, end=None, **kwargs) -> list[Signal]`
+
+ゴールデンクロス・デッドクロスを検出。
+
+**パラメータ**:
+- `ticker` (`str`): 銘柄コード
+- `short` (`int`): 短期MA期間（patternsがNoneの場合使用）
+- `long` (`int`): 長期MA期間（patternsがNoneの場合使用）
+- `patterns` (`list[tuple[int, int]] | None`): 検出パターンリスト
+
+**戻り値**: `list[Signal]` - 日付順にソートされたSignalオブジェクトのリスト
+
+##### `plot_chart(ticker, show_sma=None, show_bb=False, show_rsi=False, show_macd=False, show_signals=False, signal_patterns=None, start=None, end=None, **kwargs) -> go.Figure`
+
+インタラクティブチャートを生成。
+
+**パラメータ**:
+- `ticker` (`str`): 銘柄コード
+- `show_sma` (`list[int] | None`): 表示するSMA期間リスト
+- `show_bb` (`bool`): ボリンジャーバンドを表示
+- `show_rsi` (`bool`): RSIサブプロットを表示
+- `show_macd` (`bool`): MACDサブプロットを表示
+- `show_signals` (`bool`): クロスシグナルを表示
+- `signal_patterns` (`list[tuple[int, int]] | None`): シグナル検出パターン
+
+**戻り値**: `go.Figure` - Plotly Figureオブジェクト
+
+##### `load_existing_analysis(ticker, db_path=None) -> dict[str, Any]`
+
+既存の分析結果をデータベースから読み込み。
+
+**パラメータ**:
+- `ticker` (`str`): 銘柄コード
+- `db_path` (`Path | str | None`): analysis_results.dbのパス（省略時は設定から取得）
+
+**戻り値**: `dict` - `minervini`と`relative_strength`キーを持つ辞書
+
+### Signal
+
+シグナルデータクラス。
+
+```python
+from technical_tools import Signal
+```
+
+**属性**:
+- `date` (`datetime`): シグナル発生日
+- `signal_type` (`Literal["golden_cross", "dead_cross"]`): シグナル種別
+- `price` (`float`): シグナル発生時の終値
+- `short_period` (`int`): 短期MA期間
+- `long_period` (`int`): 長期MA期間
+
+### 例外クラス
+
+| クラス | 説明 |
+|--------|------|
+| `TechnicalToolsError` | 基底例外クラス |
+| `DataSourceError` | データ取得エラー |
+| `TickerNotFoundError` | 銘柄が見つからない |
+| `InsufficientDataError` | データ不足 |
+
+### 指標計算関数 (`backend/technical_tools/indicators.py`)
+
+低レベル関数（DataFrame直接操作）:
+
+##### `add_sma(df, periods) -> pd.DataFrame`
+
+単純移動平均を追加。
+
+##### `add_ema(df, periods) -> pd.DataFrame`
+
+指数移動平均を追加。
+
+##### `add_rsi(df, period=14) -> pd.DataFrame`
+
+RSIを追加。
+
+##### `add_macd(df, fast=12, slow=26, signal=9) -> pd.DataFrame`
+
+MACDを追加。
+
+##### `add_bollinger_bands(df, period=20, std=2.0) -> pd.DataFrame`
+
+ボリンジャーバンドを追加。
+
+##### `calculate_indicators(df, indicators, ...) -> pd.DataFrame`
+
+複数指標を一括計算。
+
+**パラメータ**:
+- `df` (`pd.DataFrame`): 'Close'カラムを持つDataFrame
+- `indicators` (`list[str]`): 計算する指標リスト（"sma", "ema", "rsi", "macd", "bb"）
+- `sma_periods` (`list[int] | None`): SMA期間（デフォルト: [5, 25, 75]）
+- `ema_periods` (`list[int] | None`): EMA期間（デフォルト: [12, 26]）
+- `rsi_period` (`int`): RSI期間（デフォルト: 14）
+- `macd_fast` (`int`): MACD短期EMA（デフォルト: 12）
+- `macd_slow` (`int`): MACD長期EMA（デフォルト: 26）
+- `macd_signal` (`int`): MACDシグナル線（デフォルト: 9）
+- `bb_period` (`int`): ボリンジャーバンド期間（デフォルト: 20）
+- `bb_std` (`float`): ボリンジャーバンド標準偏差倍率（デフォルト: 2.0）
+
+**戻り値**: `pd.DataFrame` - 指定した指標カラムが追加されたDataFrame
+
+### シグナル検出関数 (`backend/technical_tools/signals.py`)
+
+##### `detect_crosses(df, short=5, long=25) -> list[Signal]`
+
+単一パターンのクロス検出。
+
+##### `detect_crosses_multiple(df, patterns=None) -> list[Signal]`
+
+複数パターンのクロス検出。
+
+### データソース (`backend/technical_tools/data_sources/`)
+
+#### DataSource (抽象基底クラス)
+
+```python
+from technical_tools.data_sources.base import DataSource
+```
+
+すべてのデータソースが実装すべきインターフェース。
+
+##### `get_prices(ticker, start=None, end=None, **kwargs) -> pd.DataFrame`
+
+株価データを取得。戻り値はOpen, High, Low, Close, Volume列を持つDataFrame。
+
+#### JQuantsSource
+
+```python
+from technical_tools.data_sources.jquants import JQuantsSource
+```
+
+market_readerパッケージ経由でJ-Quantsデータにアクセス。
+
+**サポートするperiod値**: 1mo, 3mo, 6mo, 1y, 2y, 5y
+
+#### YFinanceSource
+
+```python
+from technical_tools.data_sources.yfinance import YFinanceSource
+```
+
+yfinanceライブラリ経由で米国株・国際株にアクセス。
+
+**サポートするティッカー形式**:
+- 米国株: AAPL, MSFT等
+- 日本株: 7203.T, 9984.T等
+
+---
+
 ## J-Quants モジュール (`backend/market_pipeline/jquants/`)
 
 ### JQuantsDataProcessor

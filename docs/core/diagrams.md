@@ -89,6 +89,18 @@ graph LR
         UT[utils.py]
     end
 
+    subgraph TechTools["backend/technical_tools/"]
+        TA[analyzer.py<br/>TechnicalAnalyzer]
+        IND[indicators.py]
+        SIG[signals.py]
+        CHT[charts.py]
+        INT[integration.py]
+        subgraph DataSources["data_sources/"]
+            JQS[jquants.py]
+            YFS[yfinance.py]
+        end
+    end
+
     SET --> DP
     SET --> SP
     SET --> MN
@@ -105,6 +117,15 @@ graph LR
     CM --> SP
 
     DR --> JDB[(jquants.db)]
+
+    JQS --> DR
+    TA --> IND
+    TA --> SIG
+    TA --> CHT
+    TA --> INT
+    TA --> JQS
+    TA --> YFS
+    INT --> ADB[(analysis_results.db)]
 ```
 
 ## シーケンス図: 日次処理フロー

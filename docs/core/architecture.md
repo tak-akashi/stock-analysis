@@ -121,6 +121,36 @@ df = reader.get_prices("7203", start="2024-01-01", end="2024-12-31")
 | `exceptions.py` | カスタム例外（StockNotFoundError等） |
 | `utils.py` | ユーティリティ関数 |
 
+### 5.1 テクニカル分析レイヤー (`backend/technical_tools/`)
+
+Jupyter Notebook向けのテクニカル分析ツール。日本株（J-Quants）と米国株（yfinance）の統一インターフェースを提供:
+
+```python
+from technical_tools import TechnicalAnalyzer
+
+# 日本株（J-Quants）
+analyzer = TechnicalAnalyzer(source="jquants")
+fig = analyzer.plot_chart("7203", show_sma=[25, 75], show_rsi=True)
+fig.show()
+
+# 米国株（yfinance）
+analyzer = TechnicalAnalyzer(source="yfinance")
+fig = analyzer.plot_chart("AAPL", show_sma=[50, 200], show_bb=True, period="1y")
+fig.show()
+
+# クロスシグナル検出
+signals = analyzer.detect_crosses("7203", patterns=[(5, 25), (25, 75)])
+```
+
+| モジュール | 機能 |
+|-----------|------|
+| `analyzer.py` | TechnicalAnalyzerファサードクラス |
+| `indicators.py` | テクニカル指標計算（SMA, EMA, RSI, MACD, BB） |
+| `signals.py` | シグナル検出（ゴールデンクロス/デッドクロス） |
+| `charts.py` | plotlyインタラクティブチャート生成 |
+| `integration.py` | 既存分析結果との連携 |
+| `data_sources/` | データソース抽象化（J-Quants, yfinance） |
+
 ### 6. 設定レイヤー (`backend/market_pipeline/config/`)
 
 Pydantic Settingsベースの型安全な設定管理システム:

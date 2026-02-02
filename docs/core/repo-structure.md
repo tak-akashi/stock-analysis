@@ -47,12 +47,26 @@ Stock-Analysis/
 │   │   └── yfinance/                     # yfinance連携（レガシー、移行中）
 │   │       └── data_processor.py
 │   │
-│   └── market_reader/                    # pandas_datareader風データアクセスAPI（旧stock_reader/）
+│   ├── market_reader/                    # pandas_datareader風データアクセスAPI（旧stock_reader/）
+│   │   ├── __init__.py                   # パッケージエクスポート
+│   │   ├── py.typed                      # PEP 561型ヒントマーカー
+│   │   ├── reader.py                     # DataReaderクラス実装
+│   │   ├── utils.py                      # ユーティリティ関数
+│   │   └── exceptions.py                 # カスタム例外クラス
+│   │
+│   └── technical_tools/                  # Jupyter Notebook用テクニカル分析ツール
 │       ├── __init__.py                   # パッケージエクスポート
-│       ├── py.typed                      # PEP 561型ヒントマーカー
-│       ├── reader.py                     # DataReaderクラス実装
-│       ├── utils.py                      # ユーティリティ関数
-│       └── exceptions.py                 # カスタム例外クラス
+│       ├── analyzer.py                   # TechnicalAnalyzerファサードクラス
+│       ├── indicators.py                 # テクニカル指標計算（SMA, EMA, RSI, MACD, BB）
+│       ├── signals.py                    # シグナル検出（ゴールデンクロス/デッドクロス）
+│       ├── charts.py                     # plotlyによるチャート生成
+│       ├── integration.py                # 既存分析結果との連携
+│       ├── exceptions.py                 # カスタム例外クラス
+│       └── data_sources/                 # データソース抽象化
+│           ├── __init__.py
+│           ├── base.py                   # DataSource抽象基底クラス
+│           ├── jquants.py                # J-Quantsデータソース（market_reader経由）
+│           └── yfinance.py               # yfinanceデータソース
 │
 ├── scripts/                          # 実行スクリプト（cron用）
 │   ├── run_daily_jquants.py          # 日次株価取得（平日22:00）
@@ -159,6 +173,10 @@ Stock-Analysis/
 | `backend/market_pipeline/utils/cache_manager.py` | キャッシュ管理 |
 | `backend/market_reader/reader.py` | DataReaderクラス（pandas_datareader風API） |
 | `backend/market_reader/exceptions.py` | カスタム例外クラス |
+| `backend/technical_tools/analyzer.py` | TechnicalAnalyzerファサードクラス（テクニカル分析統合） |
+| `backend/technical_tools/indicators.py` | テクニカル指標計算（SMA, EMA, RSI, MACD, BB） |
+| `backend/technical_tools/signals.py` | シグナル検出（ゴールデンクロス/デッドクロス） |
+| `backend/technical_tools/charts.py` | plotlyインタラクティブチャート生成 |
 
 ### スクリプト
 
@@ -196,6 +214,7 @@ Stock-Analysis/
 | `tests/test_jquants_data_processor.py` | J-Quants API |
 | `tests/test_data_processor.py` | yfinanceデータ処理（レガシー） |
 | `tests/test_stock_reader.py` | market_readerパッケージ |
+| `tests/test_technical_tools.py` | technical_toolsパッケージ |
 | `tests/test_type8_optimization.py` | Type8最適化 |
 | `tests/test_rsi_optimization.py` | RSI最適化 |
 | `tests/test_fixes.py` | バグ修正検証 |
