@@ -43,7 +43,8 @@
 │   │   ├── master/      # 銘柄マスター関連の処理
 │   │   ├── utils/       # ユーティリティ（キャッシュ、並列処理等）
 │   │   └── yfinance/    # yfinance連携（レガシー）
-│   └── market_reader/   # pandas_datareader風のデータアクセスAPI（旧stock_reader/）
+│   ├── market_reader/   # pandas_datareader風のデータアクセスAPI（旧stock_reader/）
+│   └── technical_tools/ # Jupyter Notebook用テクニカル分析ツール
 ├── data/                # データベースファイル（.sqlite, .db）を格納
 ├── logs/                # cronジョブの実行ログ
 ├── output/              # 分析結果のExcelファイルやエラーログなどを格納
@@ -219,6 +220,43 @@ df = reader.get_prices("7203", columns=["Open", "Close"])
 - `DatabaseConnectionError`: DB接続エラー
 - `InvalidDateRangeError`: 日付範囲エラー（strict=True時）
 
+## Technical Tools パッケージ
+
+Jupyter Notebook向けのテクニカル分析ツールで、日本株（J-Quants）と米国株（yfinance）の統一インターフェースを提供します。
+
+```python
+from technical_tools import TechnicalAnalyzer
+
+# 日本株（J-Quants）
+analyzer = TechnicalAnalyzer(source="jquants")
+fig = analyzer.plot_chart("7203", show_sma=[25, 75], show_rsi=True, show_macd=True)
+fig.show()
+
+# 米国株（yfinance）
+analyzer = TechnicalAnalyzer(source="yfinance")
+fig = analyzer.plot_chart("AAPL", show_sma=[50, 200], show_bb=True, period="1y")
+fig.show()
+
+# クロスシグナル検出
+signals = analyzer.detect_crosses("7203", patterns=[(5, 25), (25, 75)])
+
+# 既存分析結果との連携
+existing = analyzer.load_existing_analysis("7203")
+```
+
+**機能:**
+- データソース統一（J-Quants via market_reader, yfinance）
+- テクニカル指標計算（SMA, EMA, RSI, MACD, Bollinger Bands）
+- ゴールデンクロス/デッドクロス自動検出
+- plotlyによるインタラクティブチャート
+- 既存分析結果（Minervini, RSP）との連携
+
+**例外クラス:**
+- `TechnicalToolsError`: 基底例外
+- `DataSourceError`: データ取得エラー
+- `TickerNotFoundError`: 銘柄が見つからない
+- `InsufficientDataError`: データ不足
+
 ## 依存ライブラリ
 
 このプロジェクトでは、以下の主要なライブラリを使用しています。
@@ -231,6 +269,8 @@ df = reader.get_prices("7203", columns=["Open", "Close"])
 *   pydantic-settings: 設定管理
 *   backtrader: バックテストフレームワーク（現在未使用の可能性あり）
 *   matplotlib: グラフ描画（チャート分類で使用）
+*   plotly: インタラクティブチャート（technical_toolsで使用）
+*   yfinance: 米国株データ取得（technical_toolsで使用）
 *   japanize_matplotlib: matplotlibの日本語表示対応（チャート分類で使用）
 *   scipy: 科学技術計算（チャート分類で使用）
 *   scikit-learn: 機械学習（チャート分類で使用）
