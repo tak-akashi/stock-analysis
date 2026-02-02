@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Fixed
+- `backend/technical_tools/data_sources/jquants.py`: 株式分割を考慮した調整後価格（AdjustmentOpen/High/Low/Close/Volume）を使用するように修正
+  - 以前は未調整価格（Open/High/Low/Close/Volume）を使用していたため、株式分割時にチャートにギャップが生じていた
+
 ### Added
 - `backend/market_reader/` パッケージ: pandas_datareader風のデータアクセスAPI（旧 `stock_reader/`）
   - `DataReader`クラス: コンストラクタで `db_path` と `strict` パラメータをサポート

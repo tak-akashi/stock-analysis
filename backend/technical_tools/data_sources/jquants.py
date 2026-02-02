@@ -46,8 +46,14 @@ class JQuantsSource(DataSource):
     from the local J-Quants SQLite database.
     """
 
-    # Standard columns expected in output
-    STANDARD_COLUMNS = ["Open", "High", "Low", "Close", "Volume"]
+    # Mapping from adjusted columns to standard OHLCV names
+    ADJUSTED_COLUMN_MAP = {
+        "AdjustmentOpen": "Open",
+        "AdjustmentHigh": "High",
+        "AdjustmentLow": "Low",
+        "AdjustmentClose": "Close",
+        "AdjustmentVolume": "Volume",
+    }
 
     def __init__(self) -> None:
         """Initialize JQuantsSource."""
@@ -91,15 +97,19 @@ class JQuantsSource(DataSource):
         return self._normalize(df)
 
     def _normalize(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Normalize DataFrame to standard column format.
+        """Normalize DataFrame to standard column format using adjusted prices.
 
         Args:
             df: Raw DataFrame from market_reader
 
         Returns:
-            DataFrame with standard OHLCV columns
+            DataFrame with standard OHLCV columns (using split-adjusted prices)
         """
-        # market_reader already provides Open, High, Low, Close, Volume
-        # Select only the standard columns that exist
-        available_cols = [c for c in self.STANDARD_COLUMNS if c in df.columns]
-        return df[available_cols].copy()
+        # Use adjusted prices to account for stock splits
+        result = pd.DataFrame(index=df.index)
+
+        for adj_col, std_col in self.ADJUSTED_COLUMN_MAP.items():
+            if adj_col in df.columns:
+                result[std_col] = df[adj_col]
+
+        return result

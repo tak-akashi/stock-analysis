@@ -28,6 +28,20 @@ def sample_prices_with_sma(sample_prices: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+@pytest.fixture
+def sample_prices_with_adjustment(sample_prices: pd.DataFrame) -> pd.DataFrame:
+    """Sample prices with adjustment columns (simulating J-Quants full columns)."""
+    df = sample_prices.copy()
+    # Add adjustment columns (same values as originals for testing)
+    df["AdjustmentOpen"] = df["Open"]
+    df["AdjustmentHigh"] = df["High"]
+    df["AdjustmentLow"] = df["Low"]
+    df["AdjustmentClose"] = df["Close"]
+    df["AdjustmentVolume"] = df["Volume"]
+    df["AdjustmentFactor"] = 1.0
+    return df
+
+
 class TestExceptions:
     """Test custom exception classes."""
 
@@ -78,13 +92,15 @@ class TestDataSourceBase:
 class TestJQuantsSource:
     """Test JQuantsSource data fetching."""
 
-    def test_jquants_source_uses_market_reader(self, sample_prices: pd.DataFrame) -> None:
+    def test_jquants_source_uses_market_reader(
+        self, sample_prices_with_adjustment: pd.DataFrame
+    ) -> None:
         """JQuantsSource wraps market_reader DataReader."""
         from technical_tools.data_sources.jquants import JQuantsSource
 
         with patch("technical_tools.data_sources.jquants.DataReader") as mock_reader:
             mock_instance = MagicMock()
-            mock_instance.get_prices.return_value = sample_prices
+            mock_instance.get_prices.return_value = sample_prices_with_adjustment
             mock_reader.return_value = mock_instance
 
             source = JQuantsSource()
@@ -121,13 +137,15 @@ class TestJQuantsSource:
 
         assert "Invalid period" in str(exc_info.value)
 
-    def test_jquants_source_normalizes_columns(self, sample_prices: pd.DataFrame) -> None:
-        """JQuantsSource returns DataFrame with standard columns."""
+    def test_jquants_source_normalizes_columns(
+        self, sample_prices_with_adjustment: pd.DataFrame
+    ) -> None:
+        """JQuantsSource returns DataFrame with standard columns using adjusted prices."""
         from technical_tools.data_sources.jquants import JQuantsSource
 
         with patch("technical_tools.data_sources.jquants.DataReader") as mock_reader:
             mock_instance = MagicMock()
-            mock_instance.get_prices.return_value = sample_prices
+            mock_instance.get_prices.return_value = sample_prices_with_adjustment
             mock_reader.return_value = mock_instance
 
             source = JQuantsSource()
@@ -136,13 +154,15 @@ class TestJQuantsSource:
             expected_cols = {"Open", "High", "Low", "Close", "Volume"}
             assert expected_cols.issubset(set(df.columns))
 
-    def test_jquants_source_with_period(self, sample_prices: pd.DataFrame) -> None:
+    def test_jquants_source_with_period(
+        self, sample_prices_with_adjustment: pd.DataFrame
+    ) -> None:
         """JQuantsSource supports period argument."""
         from technical_tools.data_sources.jquants import JQuantsSource
 
         with patch("technical_tools.data_sources.jquants.DataReader") as mock_reader:
             mock_instance = MagicMock()
-            mock_instance.get_prices.return_value = sample_prices
+            mock_instance.get_prices.return_value = sample_prices_with_adjustment
             mock_reader.return_value = mock_instance
 
             source = JQuantsSource()

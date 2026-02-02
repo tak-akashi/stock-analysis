@@ -453,7 +453,7 @@ from technical_tools.data_sources.base import DataSource
 from technical_tools.data_sources.jquants import JQuantsSource
 ```
 
-market_readerパッケージ経由でJ-Quantsデータにアクセス。
+market_readerパッケージ経由でJ-Quantsデータにアクセス。株式分割を考慮した調整後価格（AdjustmentOpen/High/Low/Close/Volume）を使用してOHLCVデータを返す。
 
 **サポートするperiod値**: 1mo, 3mo, 6mo, 1y, 2y, 5y
 
