@@ -246,7 +246,7 @@ temp/*
 **/_old/
 
 CLAUDE.md
-.claude/
+# .claude/
 .steering/
 
 output/*
