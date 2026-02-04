@@ -74,3 +74,31 @@ ignore_errors = true
 [[tool.mypy.overrides]]
 module = "tests.*"
 ignore_errors = true
+
+[tool.coverage.run]
+source = ["backend"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/_old/*",
+    "*/conftest.py",
+]
+# Avoid tracing issues with pandas/numpy internals
+parallel = true
+concurrency = ["thread"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+show_missing = true
+skip_covered = false
+
+[tool.coverage.paths]
+source = [
+    "backend/",
+]

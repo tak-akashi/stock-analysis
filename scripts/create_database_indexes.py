@@ -329,13 +329,33 @@ def create_results_indexes(db_path: str):
                 'columns': ['HlRatio']
             }
         ])
+
+    # Integrated scores table indexes
+    if 'integrated_scores' in existing_tables:
+        indexes.extend([
+            {
+                'name': 'idx_integrated_scores_date',
+                'table': 'integrated_scores',
+                'columns': ['Date']
+            },
+            {
+                'name': 'idx_integrated_scores_code',
+                'table': 'integrated_scores',
+                'columns': ['Code']
+            },
+            {
+                'name': 'idx_integrated_scores_composite_rank',
+                'table': 'integrated_scores',
+                'columns': ['Date', 'composite_score_rank']
+            }
+        ])
     
     # Filter indexes based on existing constraints
     filtered_indexes = []
     skipped_count = 0
     
     for table_name in existing_tables:
-        if table_name in ['relative_strength', 'minervini', 'hl_ratio']:
+        if table_name in ['relative_strength', 'minervini', 'hl_ratio', 'integrated_scores']:
             logger.info(f"Checking constraints for table: {table_name}")
             constraints = check_existing_constraints(db_path, table_name)
             logger.info(f"  Primary keys: {constraints['primary_keys']}")

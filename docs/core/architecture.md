@@ -57,14 +57,32 @@ Stock-Analysisは、日本株式市場データの自動収集・分析システ
 │                            統合・出力レイヤー                                  │
 │  ┌────────────────────────────────────────────────────────────────────────┐  │
 │  │  integrated_analysis.py       │  integrated_analysis2.py              │  │
-│  │  複数指標のSQL統合            │  Excel出力生成                         │  │
+│  │  複数指標のSQL統合            │  DB保存 + CSV/Excel出力                 │  │
+│  │                               │         ↓                              │  │
+│  │                               │  analysis_results.db:                 │  │
+│  │                               │    integrated_scores (日次蓄積)        │  │
 │  └────────────────────────────────────────────────────────────────────────┘  │
 │                                 │                                            │
 │                                 ▼                                            │
 │                    ┌─────────────────────────┐                              │
-│                    │ output/*.xlsx            │                              │
+│                    │ output/*.xlsx, *.csv     │                              │
 │                    │ analysis_YYYY-MM-DD.xlsx │                              │
 │                    └─────────────────────────┘                              │
+└───────────────────────────────────────────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                         クエリインターフェース                                 │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │  backend/technical_tools/screener.py                                   │  │
+│  │    StockScreener クラス                                                │  │
+│  │    - filter(): 条件フィルタリング（テクニカル/財務/パターン）              │  │
+│  │    - rank_changes(): 順位変動取得                                       │  │
+│  │    - history(): 銘柄時系列取得                                          │  │
+│  │                               │                                        │  │
+│  │                               ▼                                        │  │
+│  │    TechnicalAnalyzer との連携（チャート表示）                            │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
 └───────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -95,7 +113,8 @@ Stock-Analysisは、日本株式市場データの自動収集・分析システ
 | `relative_strength.py` | 相対力指数（RSP/RSI） | relative_strength |
 | `chart_classification.py` | MLベースチャートパターン分類 | classification_results |
 | `integrated_analysis.py` | 複数指標の統合クエリ | - |
-| `integrated_analysis2.py` | Excel形式レポート出力 | output/*.xlsx |
+| `integrated_analysis2.py` | DB保存 + CSV/Excel出力 | integrated_scores |
+| `integrated_scores_repository.py` | integrated_scoresテーブルCRUD | integrated_scores |
 
 ### 4. ユーティリティレイヤー (`backend/market_pipeline/utils/`)
 
@@ -145,6 +164,7 @@ signals = analyzer.detect_crosses("7203", patterns=[(5, 25), (25, 75)])
 | モジュール | 機能 |
 |-----------|------|
 | `analyzer.py` | TechnicalAnalyzerファサードクラス |
+| `screener.py` | StockScreenerクラス（銘柄スクリーニング） |
 | `indicators.py` | テクニカル指標計算（SMA, EMA, RSI, MACD, BB） |
 | `signals.py` | シグナル検出（ゴールデンクロス/デッドクロス） |
 | `charts.py` | plotlyインタラクティブチャート生成 |
@@ -246,6 +266,21 @@ CREATE TABLE classification_results (
     confidence REAL,
     ...
 );
+
+CREATE TABLE integrated_scores (
+    Date TEXT NOT NULL,
+    Code TEXT NOT NULL,
+    composite_score REAL,
+    composite_score_rank INTEGER,
+    hl_ratio_rank INTEGER,
+    rsp_rank INTEGER,
+    created_at TEXT DEFAULT (datetime('now', 'localtime')),
+    PRIMARY KEY (Date, Code)
+);
+
+CREATE INDEX idx_integrated_scores_date ON integrated_scores (Date);
+CREATE INDEX idx_integrated_scores_code ON integrated_scores (Code);
+CREATE INDEX idx_integrated_scores_composite_rank ON integrated_scores (Date, composite_score_rank);
 ```
 
 ## 設計原則

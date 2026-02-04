@@ -9,6 +9,7 @@ from market_pipeline.analysis.minervini import update_minervini_db, update_type8
 from market_pipeline.analysis.relative_strength import update_rsp_db, update_rsi_db, init_rsp_db
 from market_pipeline.analysis.integrated_analysis import create_analysis_summary
 from market_pipeline.analysis.chart_classification import main_full_run as run_chart_classification_full
+from market_pipeline.analysis.integrated_analysis2 import main as run_integrated_analysis2
 from market_pipeline.utils.parallel_processor import measure_performance
 
 
@@ -91,20 +92,20 @@ class DailyAnalysisConfig:
 def run_daily_analysis(target_date: Optional[str] = None, modules: Optional[List[str]] = None) -> bool:
     """
     Run the optimized daily analysis workflow.
-    
+
     Args:
-        target_date: Optional target date in 'YYYY-MM-DD' format. 
+        target_date: Optional target date in 'YYYY-MM-DD' format.
                     If None, uses the latest date from jquants.db
         modules: Optional list of modules to run. If None, runs all modules.
-                Available modules: ['rsp', 'rsi', 'minervini', 'type8', 'hl_ratio', 'summary']
-    
+                Available modules: ['rsp', 'rsi', 'minervini', 'type8', 'hl_ratio', 'summary', 'chart_classification', 'integrated_scores']
+
     Returns:
         bool: True if all analysis steps completed successfully, False otherwise
     """
     analysis_config = DailyAnalysisConfig()
     logger = analysis_config.setup_logger()
     if modules is None:
-        modules = ['rsp', 'rsi', 'minervini', 'type8', 'hl_ratio', 'summary', 'chart_classification']
+        modules = ['rsp', 'rsi', 'minervini', 'type8', 'hl_ratio', 'summary', 'chart_classification', 'integrated_scores']
     
     logger.info(f"Starting daily analysis workflow. Modules to run: {modules}")
 
@@ -319,6 +320,16 @@ def run_daily_analysis(target_date: Optional[str] = None, modules: Optional[List
                     logger.error(f"Error in chart classification: {e}", exc_info=True)
                     success = False
 
+            # 8. Integrated Scores (save to DB)
+            if 'integrated_scores' in modules:
+                logger.info("Running integrated scores analysis and saving to DB...")
+                try:
+                    run_integrated_analysis2(target_date=calc_end_date_str)
+                    logger.info("Integrated scores saved to database successfully.")
+                except Exception as e:
+                    logger.error(f"Error in integrated scores: {e}", exc_info=True)
+                    success = False
+
         status_msg = "Daily analysis workflow finished successfully." if success else "Daily analysis workflow completed with errors."
         logger.info(status_msg)
 
@@ -334,8 +345,8 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description='Run optimized daily stock analysis')
     parser.add_argument('--date', type=str, help='Target date in YYYY-MM-DD format (default: latest from database)')
-    parser.add_argument('--modules', type=str, nargs='+', 
-                       choices=['rsp', 'rsi', 'minervini', 'type8', 'hl_ratio', 'summary', 'chart_classification'],
+    parser.add_argument('--modules', type=str, nargs='+',
+                       choices=['rsp', 'rsi', 'minervini', 'type8', 'hl_ratio', 'summary', 'chart_classification', 'integrated_scores'],
                        help='Analysis modules to run (default: all modules)')
     args = parser.parse_args()
     

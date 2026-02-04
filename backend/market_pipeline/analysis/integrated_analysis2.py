@@ -26,6 +26,7 @@ from typing import List
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from market_pipeline.analysis.integrated_analysis import get_comprehensive_analysis
+from market_pipeline.analysis.integrated_scores_repository import IntegratedScoresRepository
 
 # Ignore warnings for cleaner output
 warnings.filterwarnings('ignore')
@@ -222,11 +223,13 @@ def get_fundamentals_data(db_path: str, logger: logging.Logger) -> pd.DataFrame:
 
 # --- Main Analysis Logic ---
 
-def main(target_date=None):
+def main(target_date=None, output_csv=False, output_excel=False):
     """Main function to run the optimized data analysis pipeline.
-    
+
     Args:
         target_date: Optional target date in 'YYYY-MM-DD' format. If None, uses latest date.
+        output_csv: If True, output results to CSV file.
+        output_excel: If True, output results to Excel file.
     """
     logger = setup_logging()
     logger.info("Starting OPTIMIZED integrated data analysis...")
@@ -317,20 +320,40 @@ def main(target_date=None):
         with pd.option_context('display.max_rows', 10, 'display.max_columns', 15):
             logger.info(f"\n{all_df}")
 
-        # --- Optimized Excel Output ---
+        # --- Save to Database ---
+        logger.info("Saving scores to database...")
+        try:
+            repository = IntegratedScoresRepository()
+            save_count = repository.save_scores(all_df, analysis_date)
+            logger.info(f"Successfully saved {save_count} scores to integrated_scores table")
+        except Exception as e:
+            logger.error(f"Error saving to database: {e}")
+
+        # --- Output Directory Setup ---
         output_dir = os.path.join(PROJECT_ROOT, "output")
         os.makedirs(output_dir, exist_ok=True)
-        output_filename = f"integrated_analysis_{analysis_date.replace('-','')}.xlsx"
-        output_path = os.path.join(output_dir, output_filename)
 
-        try:
-            # Use efficient Excel writing
-            all_df.to_excel(output_path, index=True, engine='openpyxl')
-            logger.info(f"Successfully saved the analysis to: {output_path}")
-            logger.info(f"Final output contains {len(all_df)} rows and {len(all_df.columns)} columns")
-        except Exception as e:
-            logger.error(f"Error saving to Excel: {e}")
+        # --- CSV Output (optional) ---
+        if output_csv:
+            csv_filename = f"integrated_analysis_{analysis_date.replace('-','')}.csv"
+            csv_path = os.path.join(output_dir, csv_filename)
+            try:
+                all_df.to_csv(csv_path, index=True, encoding='utf-8-sig')
+                logger.info(f"Successfully saved CSV to: {csv_path}")
+            except Exception as e:
+                logger.error(f"Error saving to CSV: {e}")
 
+        # --- Excel Output (optional) ---
+        if output_excel:
+            output_filename = f"integrated_analysis_{analysis_date.replace('-','')}.xlsx"
+            output_path = os.path.join(output_dir, output_filename)
+            try:
+                all_df.to_excel(output_path, index=True, engine='openpyxl')
+                logger.info(f"Successfully saved Excel to: {output_path}")
+            except Exception as e:
+                logger.error(f"Error saving to Excel: {e}")
+
+        logger.info(f"Final output contains {len(all_df)} rows and {len(all_df.columns)} columns")
         logger.info("OPTIMIZED analysis script finished successfully.")
         
     except Exception as e:
@@ -340,9 +363,11 @@ def main(target_date=None):
 
 if __name__ == "__main__":
     import argparse
-    
+
     parser = argparse.ArgumentParser(description='Run optimized integrated analysis')
     parser.add_argument('--date', type=str, help='Target date in YYYY-MM-DD format (default: latest from database)')
+    parser.add_argument('--output-csv', action='store_true', help='Output results to CSV file')
+    parser.add_argument('--output-excel', action='store_true', help='Output results to Excel file')
     args = parser.parse_args()
-    
-    main(target_date=args.date)
+
+    main(target_date=args.date, output_csv=args.output_csv, output_excel=args.output_excel)

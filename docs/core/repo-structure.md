@@ -11,13 +11,13 @@ Stock-Analysis/
 │   │   ├── __init__.py
 │   │   ├── py.typed                      # PEP 561型ヒントマーカー
 │   │   ├── analysis/                     # 分析アルゴリズム
-│   │   │   ├── __init__.py
 │   │   │   ├── minervini.py              # ミネルヴィニトレンドスクリーニング
 │   │   │   ├── high_low_ratio.py         # 52週高値・安値比率
 │   │   │   ├── relative_strength.py      # RSP/RSI計算
 │   │   │   ├── chart_classification.py   # MLベースチャートパターン分類
 │   │   │   ├── integrated_analysis.py    # 複数指標統合クエリ
-│   │   │   ├── integrated_analysis2.py   # Excel出力生成
+│   │   │   ├── integrated_analysis2.py   # DB保存 + CSV/Excel出力
+│   │   │   ├── integrated_scores_repository.py  # integrated_scoresテーブルCRUD
 │   │   │   ├── demo_integrated_analysis.py
 │   │   │   └── _old/                     # 旧バージョン（参照用）
 │   │   │       ├── minervini.py
@@ -29,7 +29,6 @@ Stock-Analysis/
 │   │   │   └── settings.py               # Pydantic Settings定義
 │   │   │
 │   │   ├── jquants/                      # J-Quants API連携
-│   │   │   ├── __init__.py
 │   │   │   ├── data_processor.py         # 日次株価データ取得（非同期）
 │   │   │   ├── statements_processor.py   # 財務諸表API
 │   │   │   ├── fundamentals_calculator.py # PER/PBR/ROE等計算
@@ -40,7 +39,6 @@ Stock-Analysis/
 │   │   │   └── master_db.py
 │   │   │
 │   │   ├── utils/                        # ユーティリティ
-│   │   │   ├── __init__.py
 │   │   │   ├── parallel_processor.py     # 並列処理フレームワーク
 │   │   │   └── cache_manager.py          # キャッシュ管理
 │   │   │
@@ -57,6 +55,7 @@ Stock-Analysis/
 │   └── technical_tools/                  # Jupyter Notebook用テクニカル分析ツール
 │       ├── __init__.py                   # パッケージエクスポート
 │       ├── analyzer.py                   # TechnicalAnalyzerファサードクラス
+│       ├── screener.py                   # StockScreenerクラス（銘柄スクリーニング）
 │       ├── indicators.py                 # テクニカル指標計算（SMA, EMA, RSI, MACD, BB）
 │       ├── signals.py                    # シグナル検出（ゴールデンクロス/デッドクロス）
 │       ├── charts.py                     # plotlyによるチャート生成
@@ -168,7 +167,8 @@ Stock-Analysis/
 | `backend/market_pipeline/analysis/high_low_ratio.py` | HL比率計算 |
 | `backend/market_pipeline/analysis/relative_strength.py` | RSP/RSI計算 |
 | `backend/market_pipeline/analysis/chart_classification.py` | チャートパターン分類 |
-| `backend/market_pipeline/analysis/integrated_analysis2.py` | Excel出力 |
+| `backend/market_pipeline/analysis/integrated_analysis2.py` | DB保存 + CSV/Excel出力 |
+| `backend/market_pipeline/analysis/integrated_scores_repository.py` | integrated_scoresテーブルCRUD |
 | `backend/market_pipeline/utils/parallel_processor.py` | 並列処理ラッパー |
 | `backend/market_pipeline/utils/cache_manager.py` | キャッシュ管理 |
 | `backend/market_reader/reader.py` | DataReaderクラス（pandas_datareader風API） |
@@ -177,6 +177,7 @@ Stock-Analysis/
 | `backend/technical_tools/indicators.py` | テクニカル指標計算（SMA, EMA, RSI, MACD, BB） |
 | `backend/technical_tools/signals.py` | シグナル検出（ゴールデンクロス/デッドクロス） |
 | `backend/technical_tools/charts.py` | plotlyインタラクティブチャート生成 |
+| `backend/technical_tools/screener.py` | StockScreenerクラス（銘柄スクリーニング） |
 
 ### スクリプト
 
@@ -195,7 +196,7 @@ Stock-Analysis/
 |---------|-------|-------------|
 | `data/jquants.db` | 820MB | daily_quotes |
 | `data/statements.db` | 30MB | financial_statements, calculated_fundamentals |
-| `data/analysis_results.db` | 1.7GB | hl_ratio, minervini, relative_strength, classification_results |
+| `data/analysis_results.db` | 1.7GB | hl_ratio, minervini, relative_strength, classification_results, integrated_scores |
 | `data/master.db` | 964KB | stocks_master |
 
 ### テストファイル
@@ -215,6 +216,8 @@ Stock-Analysis/
 | `tests/test_data_processor.py` | yfinanceデータ処理（レガシー） |
 | `tests/test_stock_reader.py` | market_readerパッケージ |
 | `tests/test_technical_tools.py` | technical_toolsパッケージ |
+| `tests/test_integrated_scores.py` | IntegratedScoresRepository |
+| `tests/test_stock_screener.py` | StockScreenerクラス |
 | `tests/test_type8_optimization.py` | Type8最適化 |
 | `tests/test_rsi_optimization.py` | RSI最適化 |
 | `tests/test_fixes.py` | バグ修正検証 |
