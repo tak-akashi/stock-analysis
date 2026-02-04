@@ -386,19 +386,7 @@ class StockScreener:
             return pd.DataFrame()
 
         with self._get_analysis_connection() as conn:
-            # Get all available dates
-            dates_query = """
-                SELECT DISTINCT Date FROM integrated_scores
-                ORDER BY Date DESC
-                LIMIT ?
-            """
-            dates_df = pd.read_sql(dates_query, conn, params=[days + 1])
-
-            if len(dates_df) < 2:
-                return pd.DataFrame()
-
-            past_date = dates_df.iloc[min(days, len(dates_df) - 1)]["Date"]
-
+            # Use SQL OFFSET to get the historical date correctly
             query = f"""
                 WITH latest AS (
                     SELECT Code, {rank_column} as current_rank
@@ -408,7 +396,12 @@ class StockScreener:
                 historical AS (
                     SELECT Code, {rank_column} as past_rank
                     FROM integrated_scores
-                    WHERE Date = ?
+                    WHERE Date = (
+                        SELECT Date FROM integrated_scores
+                        WHERE Date < ?
+                        ORDER BY Date DESC
+                        LIMIT 1 OFFSET ?
+                    )
                 )
                 SELECT
                     l.Code,
@@ -421,7 +414,9 @@ class StockScreener:
                   AND h.past_rank IS NOT NULL
             """
 
-            df = pd.read_sql(query, conn, params=[latest_date, past_date])
+            df = pd.read_sql(
+                query, conn, params=[latest_date, latest_date, days - 1]
+            )
 
         if df.empty:
             return df
