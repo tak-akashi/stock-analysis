@@ -78,6 +78,7 @@
         *   `hl_ratio`: 高値・安値比率の計算結果
         *   `relative_strength`: 相対力（RSP, RSI）の計算結果
         *   `classification_results`: チャートパターン分類の結果
+        *   `integrated_scores`: 統合スコアと順位（日次蓄積）
 
 ## セットアップ方法
 
@@ -256,6 +257,60 @@ existing = analyzer.load_existing_analysis("7203")
 - `DataSourceError`: データ取得エラー
 - `TickerNotFoundError`: 銘柄が見つからない
 - `InsufficientDataError`: データ不足
+
+## Stock Screener（銘柄スクリーニング）
+
+統合分析結果をDBから取得し、柔軟にフィルタリングするツールです。
+
+```python
+from technical_tools import StockScreener, ScreenerFilter
+
+screener = StockScreener()
+
+# テクニカル指標でフィルタリング
+results = screener.filter(
+    composite_score_min=70.0,
+    hl_ratio_min=80.0,
+    rsi_max=70.0
+)
+
+# 財務指標と組み合わせ
+results = screener.filter(
+    composite_score_min=70.0,
+    market_cap_min=100000000000,  # 1000億円以上
+    per_max=15.0,
+    roe_min=15.0
+)
+
+# ScreenerFilterオブジェクトを使用（パラメータの構造化）
+config = ScreenerFilter(
+    composite_score_min=70.0,
+    market_cap_min=100_000_000_000,
+    per_max=15.0,
+)
+results = screener.filter(config)
+
+# チャートパターンでフィルタリング
+results = screener.filter(
+    pattern_window=60,
+    pattern_labels=["上昇", "急上昇"]
+)
+
+# 順位変動が大きい銘柄を取得
+movers = screener.rank_changes(days=7, direction="up", min_change=50)
+
+# 特定銘柄の履歴
+history = screener.history("7203", days=30)
+```
+
+**機能:**
+- 統合スコア（composite_score）と順位の日次蓄積
+- テクニカル指標（HlRatio, RSI）でのフィルタリング
+- 財務指標（時価総額、PER、PBR、ROE、配当利回り）でのフィルタリング
+- チャートパターン（60日/120日など）でのフィルタリング
+- 順位変動分析（rank_changes）
+- 銘柄別時系列データ取得（history）
+- TechnicalAnalyzerとのシームレスな連携
 
 ## 依存ライブラリ
 

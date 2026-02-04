@@ -381,6 +381,128 @@ from technical_tools import Signal
 | `TickerNotFoundError` | 銘柄が見つからない |
 | `InsufficientDataError` | データ不足 |
 
+### StockScreener
+
+```python
+from technical_tools import StockScreener, ScreenerFilter
+
+screener = StockScreener()
+results = screener.filter(composite_score_min=70.0, hl_ratio_min=80.0)
+```
+
+Jupyter Notebook用の銘柄スクリーニングツール。統合分析結果をDBから取得し、柔軟にフィルタリング。
+
+#### コンストラクタ
+
+```python
+StockScreener(
+    analysis_db_path: Path | None = None,
+    statements_db_path: Path | None = None
+)
+```
+
+**パラメータ**:
+- `analysis_db_path`: analysis_results.dbのパス（省略時はsettings.paths.analysis_dbを使用）
+- `statements_db_path`: statements.dbのパス（省略時はsettings.paths.statements_dbを使用）
+
+#### メソッド
+
+##### `filter(filter_config=None, *, date=None, composite_score_min=None, ...) -> pd.DataFrame`
+
+複数条件で銘柄をフィルタリング。
+
+**パラメータ**:
+- `filter_config` (`ScreenerFilter | None`): ScreenerFilterオブジェクト（指定時は他のキーワード引数を無視）
+- `date` (`str | None`): 分析日（省略時は最新日）
+- `composite_score_min` (`float | None`): 最小composite_score
+- `composite_score_max` (`float | None`): 最大composite_score
+- `hl_ratio_min` (`float | None`): 最小HL比率
+- `hl_ratio_max` (`float | None`): 最大HL比率
+- `rsi_min` (`float | None`): 最小RSI
+- `rsi_max` (`float | None`): 最大RSI
+- `market_cap_min` (`float | None`): 最小時価総額
+- `market_cap_max` (`float | None`): 最大時価総額
+- `per_min` (`float | None`): 最小PER
+- `per_max` (`float | None`): 最大PER
+- `pbr_max` (`float | None`): 最大PBR
+- `roe_min` (`float | None`): 最小ROE
+- `dividend_yield_min` (`float | None`): 最小配当利回り
+- `pattern_window` (`int | None`): チャートパターンウィンドウ（20, 60, 120, 240, 960, 1200）
+- `pattern_labels` (`list[str] | None`): パターンラベルリスト（例: ["上昇", "急上昇"]）
+- `sector` (`str | None`): セクターフィルター
+- `limit` (`int`): 最大結果数（デフォルト: 100）
+
+**戻り値**: `pd.DataFrame` - フィルタリング結果
+
+##### `rank_changes(metric="composite_score", days=7, direction="up", min_change=1, limit=50) -> pd.DataFrame`
+
+順位変動が大きい銘柄を取得。
+
+**パラメータ**:
+- `metric` (`str`): 順位指標（"composite_score", "hl_ratio", "rsp"）
+- `days` (`int`): 比較日数
+- `direction` (`str`): "up"（上昇）, "down"（下降）, "both"（両方）
+- `min_change` (`int`): 最小順位変動幅
+- `limit` (`int`): 最大結果数
+
+**戻り値**: `pd.DataFrame` - Code, current_rank, past_rank, rank_change列を持つDataFrame
+
+**例外**:
+- `ValueError`: metricが無効な値の場合
+
+##### `history(code, days=30) -> pd.DataFrame`
+
+特定銘柄の時系列データを取得。
+
+**パラメータ**:
+- `code` (`str`): 銘柄コード
+- `days` (`int`): 取得日数
+
+**戻り値**: `pd.DataFrame` - Date, Code, composite_score, composite_score_rank, hl_ratio_rank, rsp_rank列を持つDataFrame
+
+### ScreenerFilter
+
+フィルター設定をグループ化するデータクラス。
+
+```python
+from technical_tools import ScreenerFilter
+
+config = ScreenerFilter(
+    composite_score_min=70.0,
+    hl_ratio_min=80.0,
+    market_cap_min=100_000_000_000,
+    per_max=15.0,
+)
+results = screener.filter(config)
+```
+
+**属性**:
+
+| カテゴリ | 属性 | 型 | デフォルト |
+|---------|------|-----|---------|
+| 日付 | `date` | `str \| None` | None |
+| テクニカル | `composite_score_min` | `float \| None` | None |
+| テクニカル | `composite_score_max` | `float \| None` | None |
+| テクニカル | `hl_ratio_min` | `float \| None` | None |
+| テクニカル | `hl_ratio_max` | `float \| None` | None |
+| テクニカル | `rsi_min` | `float \| None` | None |
+| テクニカル | `rsi_max` | `float \| None` | None |
+| 財務 | `market_cap_min` | `float \| None` | None |
+| 財務 | `market_cap_max` | `float \| None` | None |
+| 財務 | `per_min` | `float \| None` | None |
+| 財務 | `per_max` | `float \| None` | None |
+| 財務 | `pbr_max` | `float \| None` | None |
+| 財務 | `roe_min` | `float \| None` | None |
+| 財務 | `dividend_yield_min` | `float \| None` | None |
+| パターン | `pattern_window` | `int \| None` | None |
+| パターン | `pattern_labels` | `list[str] \| None` | None |
+| その他 | `sector` | `str \| None` | None |
+| その他 | `limit` | `int` | 100 |
+
+##### `to_dict() -> dict`
+
+フィルター設定を辞書に変換（None値は除外）。
+
 ### 指標計算関数 (`backend/technical_tools/indicators.py`)
 
 低レベル関数（DataFrame直接操作）:
@@ -633,6 +755,83 @@ ROA（総資産利益率）を計算。
 ---
 
 ## 分析モジュール (`backend/market_pipeline/analysis/`)
+
+### IntegratedScoresRepository
+
+```python
+from market_pipeline.analysis.integrated_scores_repository import IntegratedScoresRepository
+
+repo = IntegratedScoresRepository()
+count = repo.save_scores(df, "2026-02-04")
+scores = repo.get_scores("2026-02-04")
+```
+
+`integrated_scores`テーブルのCRUD操作を担当するリポジトリクラス。
+
+#### コンストラクタ
+
+```python
+IntegratedScoresRepository(db_path: Path | None = None)
+```
+
+**パラメータ**:
+- `db_path`: analysis_results.dbのパス（省略時はsettings.paths.analysis_dbを使用）
+
+#### メソッド
+
+##### `save_scores(df, date) -> int`
+
+スコアと順位をDBに保存（UPSERT処理）。
+
+**パラメータ**:
+- `df` (`pd.DataFrame`): Code, composite_score, HlRatio, RelativeStrengthPercentageカラムを持つDataFrame
+- `date` (`str`): 分析日（YYYY-MM-DD形式）
+
+**戻り値**: `int` - 保存件数
+
+**順位計算**:
+- `rank(method='min')`を使用（同順位は最小値を使用）
+- NULL値は順位計算から除外
+
+##### `get_scores(date=None) -> pd.DataFrame`
+
+指定日のスコアを取得。
+
+**パラメータ**:
+- `date` (`str | None`): 分析日（省略時は最新日）
+
+**戻り値**: `pd.DataFrame` - Date, Code, composite_score, composite_score_rank, hl_ratio_rank, rsp_rank, created_at列を持つDataFrame
+
+##### `get_history(code, days=30) -> pd.DataFrame`
+
+銘柄の時系列データを取得。
+
+**パラメータ**:
+- `code` (`str`): 銘柄コード
+- `days` (`int`): 取得日数
+
+**戻り値**: `pd.DataFrame` - 日付降順でソートされた履歴データ
+
+##### `get_latest_date() -> str | None`
+
+データベース内の最新日付を取得。
+
+**戻り値**: `str | None` - 最新日付またはデータがない場合はNone
+
+##### `get_rank_changes(metric="composite_score", days=7, direction="up", min_change=1, limit=50) -> pd.DataFrame`
+
+順位変動が大きい銘柄を取得。
+
+**パラメータ**:
+- `metric` (`str`): 順位指標（"composite_score", "hl_ratio", "rsp"）
+- `days` (`int`): 比較日数
+- `direction` (`str`): "up"（上昇）, "down"（下降）, "both"（両方）
+- `min_change` (`int`): 最小順位変動幅
+- `limit` (`int`): 最大結果数
+
+**戻り値**: `pd.DataFrame` - Code, current_rank, past_rank, rank_change列を持つDataFrame
+
+---
 
 ### MinerviniConfig
 
