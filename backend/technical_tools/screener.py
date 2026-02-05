@@ -346,6 +346,40 @@ class StockScreener:
         # Apply limit
         df = df.head(limit)
 
+        # Reorder columns for readability
+        preferred_order = [
+            # Basic info
+            "Code",
+            "longName",
+            "sector",
+            "marketCap",
+            # Scores
+            "composite_score",
+            "composite_score_rank",
+            # Technical indicators
+            "HlRatio",
+            "hl_ratio_rank",
+            "RelativeStrengthPercentage",
+            "RelativeStrengthIndex",
+            "rsp_rank",
+            "MedianRatio",
+            # Fundamentals
+            "trailingPE",
+            "priceToBook",
+            "dividendYield",
+            "returnOnEquity",
+            # Meta
+            "Date",
+        ]
+        # Keep only columns that exist in the dataframe
+        existing_cols = [col for col in preferred_order if col in df.columns]
+        # Add any remaining columns not in preferred_order
+        remaining_cols = [col for col in df.columns if col not in preferred_order]
+        df = df[existing_cols + remaining_cols]
+
+        # Reset index for clean output
+        df = df.reset_index(drop=True)
+
         return df
 
     # Valid metrics for rank_changes
