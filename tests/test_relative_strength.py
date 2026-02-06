@@ -7,16 +7,15 @@ import os
 
 from market_pipeline.analysis.relative_strength import (
     relative_strength_percentage_vectorized,
-    init_results_db
+    init_results_db,
 )
 
 
 class TestRelativeStrength:
-
     @pytest.fixture
     def temp_database(self):
         """Create a temporary database for testing"""
-        temp_db = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
+        temp_db = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
         temp_db.close()
 
         conn = sqlite3.connect(temp_db.name)
@@ -41,10 +40,10 @@ class TestRelativeStrength:
         """)
 
         # Insert sample data
-        dates = pd.date_range('2023-01-01', periods=300, freq='D')
+        dates = pd.date_range("2023-01-01", periods=300, freq="D")
         np.random.seed(42)
 
-        codes = ['1001', '1002', '1003']
+        codes = ["1001", "1002", "1003"]
 
         for code in codes:
             base_price = np.random.uniform(50, 200)
@@ -52,12 +51,15 @@ class TestRelativeStrength:
 
             for date in dates:
                 change = np.random.normal(0.001, 0.02)  # Small trend with volatility
-                current_price *= (1 + change)
+                current_price *= 1 + change
 
-                conn.execute("""
+                conn.execute(
+                    """
                 INSERT INTO daily_quotes (Date, Code, AdjustmentClose)
                 VALUES (?, ?, ?)
-                """, (date.strftime('%Y-%m-%d'), code, current_price))
+                """,
+                    (date.strftime("%Y-%m-%d"), code, current_price),
+                )
 
         conn.commit()
         conn.close()
@@ -70,7 +72,7 @@ class TestRelativeStrength:
     @pytest.fixture
     def temp_results_database(self):
         """Create a temporary results database"""
-        temp_db = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
+        temp_db = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
         temp_db.close()
 
         yield temp_db.name
@@ -81,11 +83,11 @@ class TestRelativeStrength:
     def test_relative_strength_percentage_vectorized(self):
         """Test vectorized RSP calculation"""
         # Create sample price data
-        dates = pd.date_range('2023-01-01', periods=300, freq='D')
+        dates = pd.date_range("2023-01-01", periods=300, freq="D")
         np.random.seed(42)
 
         data = []
-        codes = ['1001', '1002', '1003']
+        codes = ["1001", "1002", "1003"]
 
         for code in codes:
             base_price = 100.0
@@ -93,20 +95,22 @@ class TestRelativeStrength:
 
             for date in dates:
                 change = np.random.normal(0.001, 0.02)
-                current_price *= (1 + change)
+                current_price *= 1 + change
 
-                data.append({
-                    'Date': date.strftime('%Y-%m-%d'),
-                    'Code': code,
-                    'AdjustmentClose': current_price
-                })
+                data.append(
+                    {
+                        "Date": date.strftime("%Y-%m-%d"),
+                        "Code": code,
+                        "AdjustmentClose": current_price,
+                    }
+                )
 
         df = pd.DataFrame(data)
 
         result = relative_strength_percentage_vectorized(df, period=200)
 
         assert isinstance(result, pd.DataFrame)
-        assert 'RelativeStrengthPercentage' in result.columns
+        assert "RelativeStrengthPercentage" in result.columns
         assert len(result) > 0
 
     def test_init_results_db(self, temp_results_database):
@@ -123,11 +127,16 @@ class TestRelativeStrength:
         # Check table structure
         columns = conn.execute("PRAGMA table_info(relative_strength)").fetchall()
         column_names = [col[1] for col in columns]
-        expected_columns = ['Date', 'Code', 'RelativeStrengthPercentage', 'RelativeStrengthIndex']
+        expected_columns = [
+            "Date",
+            "Code",
+            "RelativeStrengthPercentage",
+            "RelativeStrengthIndex",
+        ]
         assert all(col in column_names for col in expected_columns)
 
         conn.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__])

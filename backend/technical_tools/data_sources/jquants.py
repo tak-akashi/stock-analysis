@@ -32,7 +32,9 @@ def _period_to_dates(period: str) -> tuple[str, str]:
     """
     days = PERIOD_DAYS.get(period)
     if days is None:
-        raise ValueError(f"Invalid period: {period}. Valid values: {list(PERIOD_DAYS.keys())}")
+        raise ValueError(
+            f"Invalid period: {period}. Valid values: {list(PERIOD_DAYS.keys())}"
+        )
 
     end = datetime.now()
     start = end - timedelta(days=days)

@@ -24,7 +24,9 @@ class FundamentalsCalculator:
     Combines statement data with price data from jquants.db.
     """
 
-    def __init__(self, statements_db_path: str, jquants_db_path: str, master_db_path: str = None):
+    def __init__(
+        self, statements_db_path: str, jquants_db_path: str, master_db_path: str = None
+    ):
         """
         Initialize the fundamentals calculator.
 
@@ -90,7 +92,7 @@ class FundamentalsCalculator:
 
                 prices = {}
                 for _, row in df.iterrows():
-                    prices[row['Code']] = (row['AdjustmentClose'], row['Date'])
+                    prices[row["Code"]] = (row["AdjustmentClose"], row["Date"])
                 return prices
         except Exception as e:
             self.logger.error(f"Error getting batch prices: {e}")
@@ -120,7 +122,9 @@ class FundamentalsCalculator:
                 result = conn.execute(query, (code,)).fetchone()
 
                 if result:
-                    columns = [desc[0] for desc in conn.execute(query, (code,)).description]
+                    columns = [
+                        desc[0] for desc in conn.execute(query, (code,)).description
+                    ]
                     return dict(zip(columns, result))
 
                 # Fall back to latest quarterly
@@ -134,7 +138,9 @@ class FundamentalsCalculator:
                 result = conn.execute(query, (code,)).fetchone()
 
                 if result:
-                    columns = [desc[0] for desc in conn.execute(query, (code,)).description]
+                    columns = [
+                        desc[0] for desc in conn.execute(query, (code,)).description
+                    ]
                     return dict(zip(columns, result))
 
                 return None
@@ -190,7 +196,7 @@ class FundamentalsCalculator:
 
         try:
             with sqlite3.connect(self.statements_db_path) as conn:
-                placeholders = ','.join(['?' for _ in codes])
+                placeholders = ",".join(["?" for _ in codes])
                 query = f"""
                 WITH ranked_shares AS (
                     SELECT
@@ -278,7 +284,7 @@ class FundamentalsCalculator:
             return float(value)
         if isinstance(value, str):
             value = value.strip()
-            if value in ('', '-', '--', 'N/A', 'NA', 'null', 'None'):
+            if value in ("", "-", "--", "N/A", "NA", "null", "None"):
                 return None
             try:
                 return float(value)
@@ -325,7 +331,9 @@ class FundamentalsCalculator:
         return round(price / bps, 2)
 
     @staticmethod
-    def calculate_roe(profit: Optional[float], equity: Optional[float]) -> Optional[float]:
+    def calculate_roe(
+        profit: Optional[float], equity: Optional[float]
+    ) -> Optional[float]:
         """
         Calculate Return on Equity.
         ROE = Profit / Equity * 100
@@ -344,7 +352,9 @@ class FundamentalsCalculator:
         return round((profit / equity) * 100, 2)
 
     @staticmethod
-    def calculate_roa(profit: Optional[float], total_assets: Optional[float]) -> Optional[float]:
+    def calculate_roa(
+        profit: Optional[float], total_assets: Optional[float]
+    ) -> Optional[float]:
         """
         Calculate Return on Assets.
         ROA = Profit / Total Assets * 100
@@ -363,7 +373,9 @@ class FundamentalsCalculator:
         return round((profit / total_assets) * 100, 2)
 
     @staticmethod
-    def calculate_dividend_yield(dps: Optional[float], price: Optional[float]) -> Optional[float]:
+    def calculate_dividend_yield(
+        dps: Optional[float], price: Optional[float]
+    ) -> Optional[float]:
         """
         Calculate Dividend Yield.
         Yield = DPS / Price * 100
@@ -382,7 +394,9 @@ class FundamentalsCalculator:
         return round((dps / price) * 100, 2)
 
     @staticmethod
-    def calculate_market_cap(price: Optional[float], shares: Optional[float]) -> Optional[float]:
+    def calculate_market_cap(
+        price: Optional[float], shares: Optional[float]
+    ) -> Optional[float]:
         """
         Calculate Market Capitalization.
         Market Cap = Price * Shares Outstanding
@@ -401,8 +415,9 @@ class FundamentalsCalculator:
         return price * shares
 
     @staticmethod
-    def calculate_operating_margin(operating_profit: Optional[float],
-                                   net_sales: Optional[float]) -> Optional[float]:
+    def calculate_operating_margin(
+        operating_profit: Optional[float], net_sales: Optional[float]
+    ) -> Optional[float]:
         """
         Calculate Operating Margin.
         Operating Margin = Operating Profit / Net Sales * 100
@@ -421,8 +436,9 @@ class FundamentalsCalculator:
         return round((operating_profit / net_sales) * 100, 2)
 
     @staticmethod
-    def calculate_profit_margin(profit: Optional[float],
-                                net_sales: Optional[float]) -> Optional[float]:
+    def calculate_profit_margin(
+        profit: Optional[float], net_sales: Optional[float]
+    ) -> Optional[float]:
         """
         Calculate Net Profit Margin.
         Profit Margin = Profit / Net Sales * 100
@@ -441,8 +457,9 @@ class FundamentalsCalculator:
         return round((profit / net_sales) * 100, 2)
 
     @staticmethod
-    def calculate_free_cash_flow(cf_operating: Optional[float],
-                                 cf_investing: Optional[float]) -> Optional[float]:
+    def calculate_free_cash_flow(
+        cf_operating: Optional[float], cf_investing: Optional[float]
+    ) -> Optional[float]:
         """
         Calculate Free Cash Flow.
         FCF = Operating CF + Investing CF
@@ -461,9 +478,14 @@ class FundamentalsCalculator:
             return None
         return cf_operating + cf_investing
 
-    def calculate_all_fundamentals(self, code: str, statement: Dict,
-                                   price: float, price_date: str,
-                                   listed_info: Optional[Dict]) -> Dict:
+    def calculate_all_fundamentals(
+        self,
+        code: str,
+        statement: Dict,
+        price: float,
+        price_date: str,
+        listed_info: Optional[Dict],
+    ) -> Dict:
         """
         Calculate all fundamental metrics for a single stock.
 
@@ -478,69 +500,71 @@ class FundamentalsCalculator:
             Dictionary with all calculated metrics
         """
         # Extract values from statement
-        eps = statement.get('earnings_per_share')
-        bps = statement.get('book_value_per_share')
-        profit = statement.get('profit')
-        equity = statement.get('equity')
-        total_assets = statement.get('total_assets')
-        net_sales = statement.get('net_sales')
-        operating_profit = statement.get('operating_profit')
-        ordinary_profit = statement.get('ordinary_profit')
-        dps = statement.get('result_dividend_per_share_annual')
-        shares = statement.get('number_of_shares')
-        cf_operating = statement.get('cf_operating')
-        cf_investing = statement.get('cf_investing')
-        equity_ratio = statement.get('equity_to_asset_ratio')
-        payout_ratio = statement.get('payout_ratio_annual')
-        forecast_eps = statement.get('forecast_earnings_per_share')
+        eps = statement.get("earnings_per_share")
+        bps = statement.get("book_value_per_share")
+        profit = statement.get("profit")
+        equity = statement.get("equity")
+        total_assets = statement.get("total_assets")
+        net_sales = statement.get("net_sales")
+        operating_profit = statement.get("operating_profit")
+        ordinary_profit = statement.get("ordinary_profit")
+        dps = statement.get("result_dividend_per_share_annual")
+        shares = statement.get("number_of_shares")
+        cf_operating = statement.get("cf_operating")
+        cf_investing = statement.get("cf_investing")
+        equity_ratio = statement.get("equity_to_asset_ratio")
+        payout_ratio = statement.get("payout_ratio_annual")
+        forecast_eps = statement.get("forecast_earnings_per_share")
 
         # Company info
-        company_name = listed_info.get('CompanyName') if listed_info else None
-        sector_33 = listed_info.get('Sector33CodeName') if listed_info else None
-        sector_17 = listed_info.get('Sector17CodeName') if listed_info else None
-        market_segment = listed_info.get('MarketCodeName') if listed_info else None
+        company_name = listed_info.get("CompanyName") if listed_info else None
+        sector_33 = listed_info.get("Sector33CodeName") if listed_info else None
+        sector_17 = listed_info.get("Sector17CodeName") if listed_info else None
+        market_segment = listed_info.get("MarketCodeName") if listed_info else None
 
         return {
-            'code': code,
-            'company_name': company_name,
-            'sector_33': sector_33,
-            'sector_17': sector_17,
-            'market_segment': market_segment,
-            'latest_period': statement.get('type_of_current_period'),
-            'latest_fiscal_year_end': statement.get('current_fiscal_year_end_date'),
-            'latest_disclosed_date': statement.get('disclosed_date'),
+            "code": code,
+            "company_name": company_name,
+            "sector_33": sector_33,
+            "sector_17": sector_17,
+            "market_segment": market_segment,
+            "latest_period": statement.get("type_of_current_period"),
+            "latest_fiscal_year_end": statement.get("current_fiscal_year_end_date"),
+            "latest_disclosed_date": statement.get("disclosed_date"),
             # Valuation
-            'market_cap': self.calculate_market_cap(price, shares),
-            'per': self.calculate_per(price, eps),
-            'forward_per': self.calculate_per(price, forecast_eps),
-            'pbr': self.calculate_pbr(price, bps),
-            'dividend_yield': self.calculate_dividend_yield(dps, price),
+            "market_cap": self.calculate_market_cap(price, shares),
+            "per": self.calculate_per(price, eps),
+            "forward_per": self.calculate_per(price, forecast_eps),
+            "pbr": self.calculate_pbr(price, bps),
+            "dividend_yield": self.calculate_dividend_yield(dps, price),
             # Profitability
-            'roe': self.calculate_roe(profit, equity),
-            'roa': self.calculate_roa(profit, total_assets),
-            'equity_ratio': equity_ratio,
-            'operating_margin': self.calculate_operating_margin(operating_profit, net_sales),
-            'profit_margin': self.calculate_profit_margin(profit, net_sales),
+            "roe": self.calculate_roe(profit, equity),
+            "roa": self.calculate_roa(profit, total_assets),
+            "equity_ratio": equity_ratio,
+            "operating_margin": self.calculate_operating_margin(
+                operating_profit, net_sales
+            ),
+            "profit_margin": self.calculate_profit_margin(profit, net_sales),
             # Per Share
-            'eps': eps,
-            'bps': bps,
-            'dps': dps,
+            "eps": eps,
+            "bps": bps,
+            "dps": dps,
             # Balance Sheet
-            'total_assets': total_assets,
-            'equity': equity,
+            "total_assets": total_assets,
+            "equity": equity,
             # Cash Flow
-            'operating_cf': cf_operating,
-            'free_cash_flow': self.calculate_free_cash_flow(cf_operating, cf_investing),
+            "operating_cf": cf_operating,
+            "free_cash_flow": self.calculate_free_cash_flow(cf_operating, cf_investing),
             # Raw Financial Data
-            'net_sales': net_sales,
-            'operating_profit': operating_profit,
-            'ordinary_profit': ordinary_profit,
-            'profit': profit,
+            "net_sales": net_sales,
+            "operating_profit": operating_profit,
+            "ordinary_profit": ordinary_profit,
+            "profit": profit,
             # Payout
-            'payout_ratio': payout_ratio,
+            "payout_ratio": payout_ratio,
             # Reference
-            'reference_price': price,
-            'reference_date': price_date,
+            "reference_price": price,
+            "reference_date": price_date,
         }
 
     def update_all_fundamentals(self, output_db_path: str) -> int:
@@ -568,15 +592,19 @@ class FundamentalsCalculator:
         # Find codes with missing number_of_shares and fetch from historical data
         missing_shares_codes = []
         for _, row in statements_df.iterrows():
-            shares = self._to_float(row.get('number_of_shares'))
+            shares = self._to_float(row.get("number_of_shares"))
             if shares is None:
-                missing_shares_codes.append(row['local_code'])
+                missing_shares_codes.append(row["local_code"])
 
         shares_lookup = {}
         if missing_shares_codes:
-            self.logger.info(f"Fetching historical shares data for {len(missing_shares_codes)} codes with missing number_of_shares...")
+            self.logger.info(
+                f"Fetching historical shares data for {len(missing_shares_codes)} codes with missing number_of_shares..."
+            )
             shares_lookup = self.get_shares_for_codes(missing_shares_codes)
-            self.logger.info(f"Found historical shares data for {len(shares_lookup)} codes")
+            self.logger.info(
+                f"Found historical shares data for {len(shares_lookup)} codes"
+            )
 
         self.logger.info("Fetching listed info...")
         listed_info_df = self.get_listed_info_cached()
@@ -584,7 +612,7 @@ class FundamentalsCalculator:
         listed_info_dict = {}
         if not listed_info_df.empty:
             for _, row in listed_info_df.iterrows():
-                listed_info_dict[str(row['Code'])] = row.to_dict()
+                listed_info_dict[str(row["Code"])] = row.to_dict()
         self.logger.info(f"Got listed info for {len(listed_info_dict)} stocks")
 
         # Calculate fundamentals for each stock with statement data
@@ -594,7 +622,7 @@ class FundamentalsCalculator:
         shares_supplemented_count = 0
 
         for _, row in statements_df.iterrows():
-            code = row['local_code']
+            code = row["local_code"]
 
             # Get price
             if code not in prices:
@@ -612,10 +640,10 @@ class FundamentalsCalculator:
             # Convert row to dict for modification
             statement_dict = row.to_dict()
 
-            #補完: number_of_shares がNULLの場合、過去のデータから取得
-            current_shares = self._to_float(statement_dict.get('number_of_shares'))
+            # 補完: number_of_shares がNULLの場合、過去のデータから取得
+            current_shares = self._to_float(statement_dict.get("number_of_shares"))
             if current_shares is None and code in shares_lookup:
-                statement_dict['number_of_shares'] = shares_lookup[code]
+                statement_dict["number_of_shares"] = shares_lookup[code]
                 shares_supplemented_count += 1
 
             # Calculate fundamentals
@@ -624,13 +652,17 @@ class FundamentalsCalculator:
                 statement=statement_dict,
                 price=price,
                 price_date=price_date,
-                listed_info=listed_info
+                listed_info=listed_info,
             )
             results.append(fundamentals)
             processed += 1
 
-        self.logger.info(f"Calculated fundamentals for {processed} stocks (skipped {skipped_no_price} with no price)")
-        self.logger.info(f"Supplemented number_of_shares from historical data for {shares_supplemented_count} stocks")
+        self.logger.info(
+            f"Calculated fundamentals for {processed} stocks (skipped {skipped_no_price} with no price)"
+        )
+        self.logger.info(
+            f"Supplemented number_of_shares from historical data for {shares_supplemented_count} stocks"
+        )
 
         # Save to database
         if results:
@@ -659,8 +691,8 @@ class FundamentalsCalculator:
             conn.execute("PRAGMA journal_mode=WAL")
 
             columns = list(fundamentals[0].keys())
-            placeholders = ','.join(['?' for _ in columns])
-            column_names = ','.join(columns)
+            placeholders = ",".join(["?" for _ in columns])
+            column_names = ",".join(columns)
 
             query = f"INSERT OR REPLACE INTO calculated_fundamentals ({column_names}) VALUES ({placeholders})"
 
@@ -674,16 +706,18 @@ class FundamentalsCalculator:
 
 def setup_logging():
     """Setup logging for the fundamentals calculator."""
-    log_dir = project_root / 'logs'
+    log_dir = project_root / "logs"
     log_dir.mkdir(exist_ok=True)
 
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
             logging.StreamHandler(),
-            logging.FileHandler(log_dir / f'fundamentals_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
-        ]
+            logging.FileHandler(
+                log_dir / f"fundamentals_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+            ),
+        ],
     )
     return logging.getLogger(__name__)
 
@@ -694,15 +728,14 @@ def main():
 
     try:
         # Database paths
-        data_dir = project_root / 'data'
+        data_dir = project_root / "data"
         statements_db_path = str(data_dir / "statements.db")
         jquants_db_path = str(data_dir / "jquants.db")
 
         logger.info("Starting fundamentals calculation...")
 
         calculator = FundamentalsCalculator(
-            statements_db_path=statements_db_path,
-            jquants_db_path=jquants_db_path
+            statements_db_path=statements_db_path, jquants_db_path=jquants_db_path
         )
 
         processed = calculator.update_all_fundamentals(statements_db_path)
@@ -711,6 +744,7 @@ def main():
     except Exception as e:
         logger.error(f"Error occurred: {e}")
         import traceback
+
         traceback.print_exc()
 
 

@@ -5,10 +5,8 @@ import tempfile
 import os
 from datetime import datetime, timedelta
 
-from market_pipeline.analysis.minervini import (
-    init_minervini_db,
-    update_minervini_db
-)
+from market_pipeline.analysis.minervini import init_minervini_db, update_minervini_db
+
 
 @pytest.fixture
 def setup_dbs():
@@ -18,8 +16,8 @@ def setup_dbs():
     2. dest_conn: An empty destination DB for writing analysis results.
     """
     # Create temporary files for databases
-    source_fd, source_path = tempfile.mkstemp(suffix='.db')
-    dest_fd, dest_path = tempfile.mkstemp(suffix='.db')
+    source_fd, source_path = tempfile.mkstemp(suffix=".db")
+    dest_fd, dest_path = tempfile.mkstemp(suffix=".db")
     os.close(source_fd)
     os.close(dest_fd)
 
@@ -35,11 +33,18 @@ def setup_dbs():
     # Insert enough data for 260-day calculations
     end_date = datetime(2023, 12, 31)
     for i in range(300):
-        date = (end_date - timedelta(days=i)).strftime('%Y-%m-%d')
+        date = (end_date - timedelta(days=i)).strftime("%Y-%m-%d")
         close_price = 1000 + i
         source_cursor.execute(
             "INSERT INTO daily_quotes VALUES (?, '1301', ?, ?, ?, ?, 10000, ?)",
-            (date, close_price, close_price + 10, close_price - 10, close_price, close_price)
+            (
+                date,
+                close_price,
+                close_price + 10,
+                close_price - 10,
+                close_price,
+                close_price,
+            ),
         )
     source_conn.commit()
 
@@ -53,37 +58,45 @@ def setup_dbs():
     os.unlink(source_path)
     os.unlink(dest_path)
 
+
 def test_init_minervini_db(setup_dbs):
     """
     Tests that init_minervini_db correctly reads from the source DB,
     creates the 'minervini' table in the destination DB, and writes the initial data.
     """
     source_conn, dest_conn = setup_dbs
-    code_list = ['1301']
+    code_list = ["1301"]
 
     # Run the initialization function
     init_minervini_db(source_conn, dest_conn, code_list)
 
     # Verify table creation in destination DB
     dest_cursor = dest_conn.cursor()
-    dest_cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='minervini'")
+    dest_cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='minervini'"
+    )
     assert dest_cursor.fetchone() is not None, "The 'minervini' table was not created."
 
     # Verify data insertion
     results_df = pd.read_sql("SELECT * FROM minervini WHERE Code = '1301'", dest_conn)
     assert not results_df.empty, "No data was inserted into the 'minervini' table."
-    
+
     # Check if calculations were performed (e.g., SMA200 requires 200 days)
     # The last row should have valid calculations
-    assert pd.notna(results_df.iloc[-1]['Sma200']), "SMA200 was not calculated correctly."
-    assert pd.notna(results_df.iloc[-1]['Type_6']), "Type_6 was not calculated correctly."
+    assert pd.notna(results_df.iloc[-1]["Sma200"]), (
+        "SMA200 was not calculated correctly."
+    )
+    assert pd.notna(results_df.iloc[-1]["Type_6"]), (
+        "Type_6 was not calculated correctly."
+    )
+
 
 def test_update_minervini_db(setup_dbs):
     """
     Tests that update_minervini_db correctly adds only new data to an existing table.
     """
     source_conn, dest_conn = setup_dbs
-    code_list = ['1301']
+    code_list = ["1301"]
 
     # 1. Initialize the destination database
     init_minervini_db(source_conn, dest_conn, code_list)
@@ -97,18 +110,25 @@ def test_update_minervini_db(setup_dbs):
     source_conn.commit()
 
     # 3. Run the update function for a small recent period
-    calc_start_date = (datetime(2024, 1, 1) - timedelta(days=300)).strftime('%Y-%m-%d')
-    calc_end_date = '2024-01-01'
+    calc_start_date = (datetime(2024, 1, 1) - timedelta(days=300)).strftime("%Y-%m-%d")
+    calc_end_date = "2024-01-01"
     update_period = 5
-    update_minervini_db(source_conn, dest_conn, code_list, calc_start_date, calc_end_date, period=update_period)
+    update_minervini_db(
+        source_conn,
+        dest_conn,
+        code_list,
+        calc_start_date,
+        calc_end_date,
+        period=update_period,
+    )
 
     # 4. Verify that only the new data was added
     after_count = pd.read_sql("SELECT COUNT(*) FROM minervini", dest_conn).iloc[0, 0]
-    
+
     # The update function may add data, but the exact count depends on the implementation
     # Check that the update function ran without error
     assert after_count >= before_count, "Update function should not remove data."
-    
+
     # Check that the minervini table still has data
     all_data = pd.read_sql("SELECT * FROM minervini", dest_conn)
     assert not all_data.empty, "Minervini table should contain data after update."

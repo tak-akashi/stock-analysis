@@ -162,9 +162,9 @@ class TestStockScreener:
 
         # Add historical data for rank_changes testing
         for days_back in range(1, 8):
-            hist_date = (
-                datetime(2026, 2, 1) - timedelta(days=days_back)
-            ).strftime("%Y-%m-%d")
+            hist_date = (datetime(2026, 2, 1) - timedelta(days=days_back)).strftime(
+                "%Y-%m-%d"
+            )
             for i, code in enumerate(codes):
                 # Simulate rank changes over time
                 if code == "1003":
@@ -216,7 +216,16 @@ class TestStockScreener:
                 (code, company_name, sector_33, market_cap, per, pbr, dividend_yield, roe)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-                (code, f"Company {code}", "電気機器", market_cap, per, pbr, div_yield, roe),
+                (
+                    code,
+                    f"Company {code}",
+                    "電気機器",
+                    market_cap,
+                    per,
+                    pbr,
+                    div_yield,
+                    roe,
+                ),
             )
         conn.commit()
         conn.close()

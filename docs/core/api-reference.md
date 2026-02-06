@@ -380,6 +380,11 @@ from technical_tools import Signal
 | `DataSourceError` | データ取得エラー |
 | `TickerNotFoundError` | 銘柄が見つからない |
 | `InsufficientDataError` | データ不足 |
+| `BacktestError` | バックテスト関連の基底エラー |
+| `BacktestInsufficientDataError` | バックテストデータ不足 |
+| `InvalidSignalError` | 無効なシグナル指定 |
+| `InvalidRuleError` | 無効なルール指定 |
+| `PortfolioError` | ポートフォリオ関連エラー |
 
 ### StockScreener
 
@@ -590,6 +595,355 @@ yfinanceライブラリ経由で米国株・国際株にアクセス。
 **サポートするティッカー形式**:
 - 米国株: AAPL, MSFT等
 - 日本株: 7203.T, 9984.T等
+
+### Backtester
+
+```python
+from technical_tools import Backtester
+
+bt = Backtester(cash=1_000_000)
+bt.add_signal("golden_cross", short=5, long=25)
+bt.add_exit_rule("stop_loss", threshold=-0.10)
+results = bt.run(symbols=["7203"], start="2023-01-01", end="2023-12-31")
+```
+
+シグナルベースのバックテストを実行するクラス。backtesting.pyライブラリをラップ。
+
+#### コンストラクタ
+
+```python
+Backtester(cash: float = 1_000_000, commission: float = 0.0)
+```
+
+**パラメータ**:
+- `cash`: 初期資金（デフォルト: 1,000,000）
+- `commission`: 取引手数料率（デフォルト: 0）
+
+#### メソッド
+
+##### `add_signal(signal_name, **params) -> Backtester`
+
+トレーディングシグナルを追加。
+
+**パラメータ**:
+- `signal_name` (`str`): シグナル名
+
+**対応シグナル**:
+
+| シグナル名 | 説明 | パラメータ |
+|-----------|------|-----------|
+| `golden_cross` | ゴールデンクロス | `short=5, long=25` |
+| `dead_cross` | デッドクロス | `short=5, long=25` |
+| `rsi_oversold` | RSI売られすぎ | `threshold=30, period=14` |
+| `rsi_overbought` | RSI買われすぎ | `threshold=70, period=14` |
+| `macd_cross` | MACDクロス | `fast=12, slow=26, signal=9` |
+| `bollinger_breakout` | ボリンジャーブレイクアウト | `period=20, std=2.0, direction="up"` |
+| `bollinger_squeeze` | ボリンジャースクイーズ | `period=20, std=2.0, squeeze_threshold=0.1` |
+| `volume_spike` | 出来高急増 | `period=20, multiplier=2.0` |
+| `volume_breakout` | 出来高確認付きブレイクアウト | `price_period=20, volume_period=20, volume_multiplier=1.5` |
+
+**戻り値**: `Backtester` - メソッドチェーン用
+
+**例外**: `InvalidSignalError` - シグナル名が無効
+
+##### `add_entry_rule(rule_name, **params) -> Backtester`
+
+エントリールールを追加。
+
+**パラメータ**:
+- `rule_name` (`str`): ルール名
+
+**対応ルール**:
+
+| ルール名 | 説明 |
+|---------|------|
+| `next_day_open` | 翌営業日の寄付で買い |
+
+##### `add_exit_rule(rule_name, **params) -> Backtester`
+
+エグジットルールを追加。
+
+**パラメータ**:
+- `rule_name` (`str`): ルール名
+
+**対応ルール**:
+
+| ルール名 | 説明 | パラメータ |
+|---------|------|-----------|
+| `stop_loss` | 損切り | `threshold=-0.10`（負の値） |
+| `take_profit` | 利確 | `threshold=0.20`（正の値） |
+| `max_holding_days` | 最大保有日数 | `days=30` |
+| `trailing_stop` | トレーリングストップ | `threshold=-0.05`（負の値） |
+
+**戻り値**: `Backtester` - メソッドチェーン用
+
+**例外**: `InvalidRuleError` - ルール名またはパラメータが無効
+
+##### `run(symbols, start, end, max_workers=None) -> BacktestResults`
+
+バックテストを実行。
+
+**パラメータ**:
+- `symbols` (`list[str]`): 銘柄コードリスト
+- `start` (`str`): 開始日（YYYY-MM-DD）
+- `end` (`str`): 終了日（YYYY-MM-DD）
+- `max_workers` (`int | None`): 並列ワーカー数（デフォルト: min(len(symbols), 4)）
+
+**戻り値**: `BacktestResults` - バックテスト結果
+
+**例外**:
+- `BacktestError` - シグナル未設定
+- `BacktestInsufficientDataError` - データ不足
+
+##### `run_with_screener(screener_filter, start, end, ...) -> BacktestResults`
+
+スクリーナー結果を使用したバックテスト。
+
+**パラメータ**:
+- `screener_filter` (`ScreenerFilter | dict`): スクリーナーフィルター
+- `start` (`str`): 開始日
+- `end` (`str`): 終了日
+- `entry_rule` (`str`): エントリールール（デフォルト: "next_day_open"）
+- `exit_rules` (`dict[str, float] | None`): エグジットルール辞書
+- `screener` (`StockScreener | None`): スクリーナーインスタンス
+- `max_workers` (`int | None`): 並列ワーカー数
+
+**戻り値**: `BacktestResults`
+
+### BacktestResults
+
+```python
+results = bt.run(symbols=["7203"], start="2023-01-01", end="2023-12-31")
+print(results.summary())
+results.plot().show()
+```
+
+バックテスト結果を保持し、分析・可視化を提供するクラス。
+
+#### メソッド
+
+##### `summary() -> dict`
+
+パフォーマンス指標のサマリーを取得。
+
+**戻り値**: 以下のキーを持つ辞書
+
+| キー | 説明 |
+|-----|------|
+| `total_trades` | 総取引回数 |
+| `win_rate` | 勝率（0-1） |
+| `avg_return` | 平均リターン |
+| `max_return` | 最大リターン |
+| `max_loss` | 最大損失 |
+| `profit_factor` | プロフィットファクター |
+| `max_drawdown` | 最大ドローダウン |
+| `sharpe_ratio` | 年率シャープレシオ |
+| `avg_holding_days` | 平均保有日数 |
+
+##### `trades() -> pd.DataFrame`
+
+取引一覧をDataFrameで取得。
+
+**戻り値**: `pd.DataFrame` - symbol, entry_date, entry_price, exit_date, exit_price, shares, pnl, return_pct, holding_days, exit_reason
+
+##### `plot() -> go.Figure`
+
+資産推移とドローダウンのインタラクティブチャートを生成。
+
+**戻り値**: `go.Figure` - Plotly Figure
+
+##### `export(path, format=None) -> Path`
+
+結果をファイルにエクスポート。
+
+**パラメータ**:
+- `path` (`str | Path`): 出力パス
+- `format` (`str | None`): "csv", "excel", "html"（省略時は拡張子から推定）
+
+**戻り値**: `Path` - エクスポートされたファイルパス
+
+**Excel出力シート**:
+- Summary: サマリー指標
+- Trades: 取引一覧
+- By Symbol: 銘柄別パフォーマンス
+- Monthly Returns: 月次リターン
+
+##### `by_symbol() -> pd.DataFrame`
+
+銘柄別パフォーマンス。
+
+**戻り値**: `pd.DataFrame` - symbol, trades, win_rate, avg_return, total_pnl
+
+##### `by_sector(sector_map) -> pd.DataFrame`
+
+セクター別パフォーマンス。
+
+**パラメータ**:
+- `sector_map` (`dict[str, str] | None`): 銘柄→セクターのマッピング
+
+**戻り値**: `pd.DataFrame` - sector, trades, win_rate, avg_return, total_pnl
+
+##### `monthly_returns() -> pd.DataFrame`
+
+月次リターン分析。
+
+**戻り値**: `pd.DataFrame` - year_month, trades, avg_return, total_pnl
+
+##### `yearly_returns() -> pd.DataFrame`
+
+年次リターン分析。
+
+**戻り値**: `pd.DataFrame` - year, trades, win_rate, avg_return, total_pnl
+
+### Trade
+
+取引データクラス。
+
+```python
+from technical_tools import Trade
+```
+
+**属性**:
+- `symbol` (`str`): 銘柄コード
+- `entry_date` (`datetime`): エントリー日
+- `entry_price` (`float`): エントリー価格
+- `exit_date` (`datetime`): エグジット日
+- `exit_price` (`float`): エグジット価格
+- `shares` (`int`): 株数
+- `pnl` (`float`): 損益
+- `return_pct` (`float`): リターン率
+- `holding_days` (`int`): 保有日数
+- `exit_reason` (`str`): エグジット理由
+
+### VirtualPortfolio
+
+```python
+from technical_tools import VirtualPortfolio
+
+vp = VirtualPortfolio("my_strategy_2025")
+vp.buy("7203", shares=100, price=2500)
+print(vp.summary())
+vp.plot().show()
+```
+
+仮想ポートフォリオを管理するクラス。データは`data/portfolios/`にJSON永続化。
+
+#### コンストラクタ
+
+```python
+VirtualPortfolio(name: str, portfolio_dir: Path | None = None)
+```
+
+**パラメータ**:
+- `name`: ポートフォリオ名（ファイル名に使用）
+- `portfolio_dir`: 保存ディレクトリ（デフォルト: data/portfolios/）
+
+#### メソッド
+
+##### `buy(symbol, shares=None, amount=None, price=None) -> VirtualPortfolio`
+
+銘柄を購入。
+
+**パラメータ**:
+- `symbol` (`str`): 銘柄コード
+- `shares` (`int | None`): 購入株数
+- `amount` (`float | None`): 投資金額（sharesがNoneの場合に使用）
+- `price` (`float | None`): 購入価格（省略時は現在価格）
+
+**戻り値**: `VirtualPortfolio` - メソッドチェーン用
+
+**例外**: `PortfolioError` - shares/amountの両方がNone、または株数が0以下
+
+##### `sell(symbol, shares, price=None) -> VirtualPortfolio`
+
+銘柄を売却。
+
+**パラメータ**:
+- `symbol` (`str`): 銘柄コード
+- `shares` (`int`): 売却株数
+- `price` (`float | None`): 売却価格（省略時は現在価格）
+
+**例外**: `PortfolioError` - 銘柄未保有または株数不足
+
+##### `sell_all(symbol, price=None) -> VirtualPortfolio`
+
+銘柄を全株売却。
+
+##### `summary() -> dict`
+
+ポートフォリオサマリーを取得。
+
+**戻り値**: 以下のキーを持つ辞書
+
+| キー | 説明 |
+|-----|------|
+| `total_investment` | 総投資額 |
+| `current_value` | 現在評価額 |
+| `total_pnl` | 総損益 |
+| `return_pct` | リターン率 |
+
+##### `holdings() -> pd.DataFrame`
+
+保有銘柄一覧を取得。
+
+**戻り値**: `pd.DataFrame` - symbol, shares, avg_price, current_price, pnl
+
+##### `performance(days=30) -> pd.DataFrame`
+
+パフォーマンス推移を取得。
+
+**パラメータ**:
+- `days` (`int`): 取得日数
+
+**戻り値**: `pd.DataFrame` - date, portfolio_value
+
+##### `plot() -> go.Figure`
+
+ポートフォリオのインタラクティブチャートを生成。
+
+**戻り値**: `go.Figure` - 保有比率（円グラフ）、損益（棒グラフ）、パフォーマンス推移
+
+##### `buy_from_screener(screener_filter=None, amount_per_stock=100000, max_stocks=10, ...) -> VirtualPortfolio`
+
+スクリーナー結果から一括購入。
+
+**パラメータ**:
+- `screener_filter` (`ScreenerFilter | dict | None`): フィルター設定
+- `amount_per_stock` (`float`): 各銘柄への投資額
+- `max_stocks` (`int`): 最大購入銘柄数
+- `screener` (`StockScreener | None`): スクリーナーインスタンス
+- `**filter_kwargs`: フィルターパラメータ（screener_filterがNoneの場合）
+
+### バックテストシグナル (`backend/technical_tools/backtest_signals/`)
+
+#### SignalRegistry
+
+シグナルクラスの登録・取得を管理。
+
+```python
+from technical_tools.backtest_signals import SignalRegistry
+
+# シグナルクラスを取得
+signal_cls = SignalRegistry.get("golden_cross")
+
+# 利用可能なシグナル一覧
+signal_names = SignalRegistry.list_signals()
+```
+
+#### BaseSignal
+
+すべてのシグナルの基底クラス（抽象）。
+
+```python
+from technical_tools.backtest_signals import BaseSignal
+
+class MySignal(BaseSignal):
+    name = "my_signal"
+
+    def detect(self, df: pd.DataFrame) -> pd.Series:
+        # シグナル検出ロジック
+        return pd.Series(False, index=df.index)
+```
 
 ---
 

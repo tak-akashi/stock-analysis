@@ -384,7 +384,9 @@ class TestIndicators:
         ema_cols = [c for c in df.columns if c.startswith("EMA_")]
         assert len(ema_cols) > 0
 
-    def test_calculate_indicators_unknown_ignored(self, sample_prices: pd.DataFrame) -> None:
+    def test_calculate_indicators_unknown_ignored(
+        self, sample_prices: pd.DataFrame
+    ) -> None:
         """Unknown indicators are silently ignored."""
         from technical_tools.indicators import calculate_indicators
 
@@ -556,7 +558,9 @@ class TestCharts:
         fig = create_chart(df, ticker="7203", show_macd=True)
         assert fig is not None
 
-    def test_create_chart_with_bollinger_bands(self, sample_prices: pd.DataFrame) -> None:
+    def test_create_chart_with_bollinger_bands(
+        self, sample_prices: pd.DataFrame
+    ) -> None:
         """Chart includes Bollinger Bands when requested."""
         from technical_tools.charts import create_chart
         from technical_tools.indicators import add_bollinger_bands
@@ -608,7 +612,9 @@ class TestCharts:
         # Check layout height is increased for multiple subplots
         assert fig.layout.height == 800
 
-    def test_create_chart_signal_outside_data(self, sample_prices: pd.DataFrame) -> None:
+    def test_create_chart_signal_outside_data(
+        self, sample_prices: pd.DataFrame
+    ) -> None:
         """Chart handles signals with dates not in DataFrame index."""
         from technical_tools.charts import create_chart
         from technical_tools.signals import Signal
@@ -655,9 +661,7 @@ class TestIntegration:
             )
         """
         )
-        conn.execute(
-            "INSERT INTO minervini VALUES ('7203', '2024-01-15', 0.85)"
-        )
+        conn.execute("INSERT INTO minervini VALUES ('7203', '2024-01-15', 0.85)")
         conn.execute(
             "INSERT INTO relative_strength VALUES ('7203', '2024-01-15', 75.5)"
         )
@@ -726,16 +730,10 @@ class TestIntegration:
 
         db_path = tmp_path / "analysis_results.db"
         conn = sqlite3.connect(db_path)
-        conn.execute(
-            "CREATE TABLE minervini (Code TEXT, Date TEXT, score REAL)"
-        )
-        conn.execute(
-            "CREATE TABLE relative_strength (Code TEXT, Date TEXT, rsp REAL)"
-        )
+        conn.execute("CREATE TABLE minervini (Code TEXT, Date TEXT, score REAL)")
+        conn.execute("CREATE TABLE relative_strength (Code TEXT, Date TEXT, rsp REAL)")
         # Insert with 5-digit code
-        conn.execute(
-            "INSERT INTO minervini VALUES ('72030', '2024-01-15', 0.85)"
-        )
+        conn.execute("INSERT INTO minervini VALUES ('72030', '2024-01-15', 0.85)")
         conn.commit()
         conn.close()
 
@@ -764,9 +762,7 @@ class TestTechnicalAnalyzer:
             _ = TechnicalAnalyzer(source="yfinance")
             mock_yfinance.assert_called_once()
 
-    def test_analyzer_get_prices_caches_data(
-        self, sample_prices: pd.DataFrame
-    ) -> None:
+    def test_analyzer_get_prices_caches_data(self, sample_prices: pd.DataFrame) -> None:
         """TechnicalAnalyzer caches price data."""
         with patch("technical_tools.analyzer.JQuantsSource") as mock_jquants:
             mock_source = MagicMock()
@@ -916,7 +912,9 @@ class TestTechnicalAnalyzer:
 
             assert isinstance(signals, list)
 
-    def test_analyzer_plot_chart_with_signals(self, sample_prices: pd.DataFrame) -> None:
+    def test_analyzer_plot_chart_with_signals(
+        self, sample_prices: pd.DataFrame
+    ) -> None:
         """TechnicalAnalyzer.plot_chart with signal detection."""
         with patch("technical_tools.analyzer.JQuantsSource") as mock_jquants:
             mock_source = MagicMock()
@@ -942,22 +940,14 @@ class TestTechnicalAnalyzer:
 
         db_path = tmp_path / "analysis_results.db"
         conn = sqlite3.connect(db_path)
-        conn.execute(
-            "CREATE TABLE minervini (Code TEXT, Date TEXT, score REAL)"
-        )
-        conn.execute(
-            "CREATE TABLE relative_strength (Code TEXT, Date TEXT, rsp REAL)"
-        )
-        conn.execute(
-            "INSERT INTO minervini VALUES ('7203', '2024-01-15', 0.85)"
-        )
+        conn.execute("CREATE TABLE minervini (Code TEXT, Date TEXT, score REAL)")
+        conn.execute("CREATE TABLE relative_strength (Code TEXT, Date TEXT, rsp REAL)")
+        conn.execute("INSERT INTO minervini VALUES ('7203', '2024-01-15', 0.85)")
         conn.commit()
         conn.close()
 
         with patch("technical_tools.analyzer.JQuantsSource"):
-            with patch(
-                "technical_tools.analyzer.load_existing_analysis"
-            ) as mock_load:
+            with patch("technical_tools.analyzer.load_existing_analysis") as mock_load:
                 mock_load.return_value = {
                     "minervini": {"Code": "7203", "score": 0.85},
                     "relative_strength": None,

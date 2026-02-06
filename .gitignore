@@ -238,6 +238,9 @@ node_modules/
 .env
 
 data/*
+!data/portfolios/
+data/portfolios/*
+!data/portfolios/.gitkeep
 sandbox/*
 # output/*
 logs/*
