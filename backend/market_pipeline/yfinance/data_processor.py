@@ -208,7 +208,9 @@ def download_tse_listed_stocks():
 
 
 def fetch_and_store_tse_data(
-    max_workers: Optional[int] = None, delay: Optional[float] = None, db_path: Optional[str] = None
+    max_workers: Optional[int] = None,
+    delay: Optional[float] = None,
+    db_path: Optional[str] = None,
 ) -> None:
     """Fetch all TSE stock data and store in SQLite database."""
     settings = get_settings()
@@ -312,7 +314,10 @@ class TSEDataProcessor:
     """TSE stock data processor with configurable rate limiting."""
 
     def __init__(
-        self, max_workers: Optional[int] = None, rate_limit_delay: Optional[float] = None, db_path: Optional[str] = None
+        self,
+        max_workers: Optional[int] = None,
+        rate_limit_delay: Optional[float] = None,
+        db_path: Optional[str] = None,
     ):
         """
         Initialize the processor.

@@ -78,7 +78,9 @@ def main():
 
     except Exception as e:
         logger.error(f"エラーが発生しました: {e}", exc_info=True)
-        logger.error("環境変数 EMAIL, PASSWORD が正しく設定されているか確認してください")
+        logger.error(
+            "環境変数 EMAIL, PASSWORD が正しく設定されているか確認してください"
+        )
         sys.exit(1)
 
 

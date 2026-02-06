@@ -25,6 +25,7 @@ from market_pipeline.analysis.chart_classification import (
 
 # --- Fixtures ---
 
+
 @pytest.fixture
 def mock_db_connections(mocker):
     """Mocks all database interactions (read and write)."""
@@ -32,32 +33,35 @@ def mock_db_connections(mocker):
     mock_conn = MagicMock()
     mock_cursor = MagicMock()
     mock_conn.cursor.return_value = mock_cursor
-    mock_cursor.execute.return_value = None # Ensure execute returns something
-    mock_conn.commit.return_value = None # Mock commit as well
+    mock_cursor.execute.return_value = None  # Ensure execute returns something
+    mock_conn.commit.return_value = None  # Mock commit as well
 
     # Explicitly set __enter__ and __exit__ for the context manager
     mock_conn.__enter__.return_value = mock_conn
-    mock_conn.__exit__.return_value = False # Indicate no exception was handled
+    mock_conn.__exit__.return_value = False  # Indicate no exception was handled
 
-    mocker.patch('sqlite3.connect', return_value=mock_conn)
+    mocker.patch("sqlite3.connect", return_value=mock_conn)
 
     # Mock for pandas.read_sql_query
-    mock_df_stock = pd.DataFrame({
-        'Date': pd.to_datetime(pd.date_range(start='2024-01-01', periods=300)),
-        'AdjustmentClose': np.linspace(100, 150, 300)
-    })
-    mock_df_master = pd.DataFrame({'jquants_code': ["101", "102", "103"]})
+    mock_df_stock = pd.DataFrame(
+        {
+            "Date": pd.to_datetime(pd.date_range(start="2024-01-01", periods=300)),
+            "AdjustmentClose": np.linspace(100, 150, 300),
+        }
+    )
+    mock_df_master = pd.DataFrame({"jquants_code": ["101", "102", "103"]})
 
     def mock_read_sql_query(query, conn, params=None, parse_dates=None):
         if "FROM daily_quotes" in query:
             return mock_df_stock
         elif "FROM stocks_master" in query:
             return mock_df_master
-        return pd.DataFrame() # Default empty dataframe
+        return pd.DataFrame()  # Default empty dataframe
 
-    mocker.patch('pandas.read_sql_query', side_effect=mock_read_sql_query)
+    mocker.patch("pandas.read_sql_query", side_effect=mock_read_sql_query)
 
     return mock_conn
+
 
 @pytest.fixture
 def classifier_instance(mock_db_connections):
@@ -65,7 +69,9 @@ def classifier_instance(mock_db_connections):
     # The mock_db_connections fixture already sets up the necessary mocks
     return ChartClassifier(ticker="99999", window=30)
 
+
 # --- Test Cases ---
+
 
 def test_chart_classifier_initialization(classifier_instance):
     """Test if the ChartClassifier initializes correctly."""
@@ -73,18 +79,25 @@ def test_chart_classifier_initialization(classifier_instance):
     assert classifier_instance.window == 30
     assert len(classifier_instance.price_data) > 0
     assert len(classifier_instance.templates_manual) == 9
-    assert '上昇' in classifier_instance.templates_manual
+    assert "上昇" in classifier_instance.templates_manual
+
 
 def test_initialization_not_enough_data(mock_db_connections):
     """Test that initialization raises ValueError if there is not enough data."""
     # Override the mock_df_stock for this specific test
     # We need to patch pandas.read_sql_query specifically for this test
-    with patch('pandas.read_sql_query', return_value=pd.DataFrame({
-        'Date': pd.to_datetime(pd.date_range(start='2024-01-01', periods=10)),
-        'AdjustmentClose': np.linspace(100, 150, 10)
-    })):
+    with patch(
+        "pandas.read_sql_query",
+        return_value=pd.DataFrame(
+            {
+                "Date": pd.to_datetime(pd.date_range(start="2024-01-01", periods=10)),
+                "AdjustmentClose": np.linspace(100, 150, 10),
+            }
+        ),
+    ):
         with pytest.raises(ValueError, match="Not enough data for ticker"):
             ChartClassifier(ticker="12345", window=20)
+
 
 def test_normalize():
     """Test the static _normalize method."""
@@ -94,11 +107,12 @@ def test_normalize():
     assert np.isclose(normalized.max(), 1.0)
     assert np.allclose(normalized, np.array([0.0, 0.25, 0.5, 0.75, 1.0]))
 
+
 def test_classify_latest(classifier_instance):
     """Test the classification of the latest window of data."""
     # Create price data that perfectly matches the '上昇' pattern with date index
     perfect_rise = np.linspace(100, 200, 30)
-    date_index = pd.date_range(start='2024-01-01', periods=30)
+    date_index = pd.date_range(start="2024-01-01", periods=30)
     classifier_instance.price_data = pd.Series(perfect_rise, index=date_index)
 
     label, score, latest_date = classifier_instance.classify_latest()
@@ -107,11 +121,12 @@ def test_classify_latest(classifier_instance):
     assert np.isclose(score, 1.0)
     assert latest_date == "2024-01-30"
 
+
 def test_save_classification_plot(mocker, classifier_instance):
     """Test that the plot saving function calls the correct file system and plotting methods."""
-    mock_makedirs = mocker.patch('os.makedirs')
-    mock_savefig = mocker.patch('matplotlib.pyplot.savefig')
-    mocker.patch('matplotlib.pyplot.close') # Don't need to test this, just mock it
+    mock_makedirs = mocker.patch("os.makedirs")
+    mock_savefig = mocker.patch("matplotlib.pyplot.savefig")
+    mocker.patch("matplotlib.pyplot.close")  # Don't need to test this, just mock it
 
     output_dir = "/tmp/test_output"
     classifier_instance.save_classification_plot("上昇", 0.95, output_dir)
@@ -123,11 +138,13 @@ def test_save_classification_plot(mocker, classifier_instance):
 
 # --- Test Database and Main Functions ---
 
+
 def test_get_all_tickers(mock_db_connections):
     """Test fetching all tickers from the master DB."""
     # mock_db_connections already sets up pandas.read_sql_query for master DB
     tickers = get_all_tickers("dummy/master.db")
     assert tickers == ["101", "102", "103"]
+
 
 def test_init_results_db(mock_db_connections):
     """Test the initialization of the results database."""
@@ -136,6 +153,7 @@ def test_init_results_db(mock_db_connections):
     # Check that the CREATE TABLE query was executed
     cursor.execute.assert_called_once()
     assert "CREATE TABLE IF NOT EXISTS" in cursor.execute.call_args[0][0]
+
 
 def test_save_result_to_db(mock_db_connections):
     """Test saving a single result to the database."""
@@ -146,7 +164,8 @@ def test_save_result_to_db(mock_db_connections):
     assert "INSERT OR REPLACE INTO" in sql
     assert params == ("2024-07-11", "12345", 60, "調整", 0.88)
 
-@patch('market_pipeline.analysis.chart_classification.OptimizedChartClassifier')
+
+@patch("market_pipeline.analysis.chart_classification.OptimizedChartClassifier")
 def test_main_sample(MockClassifier, mock_db_connections):
     """Test the main_sample function to ensure it loops and calls correctly."""
     # Mock the instance methods
@@ -162,9 +181,14 @@ def test_main_sample(MockClassifier, mock_db_connections):
     assert MockClassifier.call_count == len(tickers) * len(windows)
 
     # Check if the plot saving method was called for each
-    assert mock_instance.save_classification_plot.call_count == len(tickers) * len(windows)
+    assert mock_instance.save_classification_plot.call_count == len(tickers) * len(
+        windows
+    )
 
-@pytest.mark.skip(reason="main_full_run has been replaced by main_full_run_optimized with different architecture")
+
+@pytest.mark.skip(
+    reason="main_full_run has been replaced by main_full_run_optimized with different architecture"
+)
 def test_main_full_run(mock_db_connections):
     """Test the main_full_run function - SKIPPED due to architecture change."""
     pass
@@ -173,30 +197,36 @@ def test_main_full_run(mock_db_connections):
 @pytest.mark.parametrize(
     "mode, expected_func",
     [
-        ('sample', 'main_sample'),
-        ('sample-adaptive', 'main_sample_adaptive'),
-        ('full', 'main_full_run_optimized'),
-        ('full-optimized', 'main_full_run_optimized')
-    ]
+        ("sample", "main_sample"),
+        ("sample-adaptive", "main_sample_adaptive"),
+        ("full", "main_full_run_optimized"),
+        ("full-optimized", "main_full_run_optimized"),
+    ],
 )
 def test_main_argparse_dispatch(mocker, mode, expected_func):
     """Test that the correct main function is called based on the --mode arg."""
     # Patch the actual main functions that `main()` will call
-    mock_main_sample = mocker.patch('market_pipeline.analysis.chart_classification.main_sample')
-    mock_main_sample_adaptive = mocker.patch('market_pipeline.analysis.chart_classification.main_sample_adaptive')
-    mock_main_full_run_optimized = mocker.patch('market_pipeline.analysis.chart_classification.main_full_run_optimized')
+    mock_main_sample = mocker.patch(
+        "market_pipeline.analysis.chart_classification.main_sample"
+    )
+    mock_main_sample_adaptive = mocker.patch(
+        "market_pipeline.analysis.chart_classification.main_sample_adaptive"
+    )
+    mock_main_full_run_optimized = mocker.patch(
+        "market_pipeline.analysis.chart_classification.main_full_run_optimized"
+    )
 
     # Simulate command-line arguments
-    mocker.patch('sys.argv', ['script_name', '--mode', mode])
+    mocker.patch("sys.argv", ["script_name", "--mode", mode])
 
     # Call the top-level main function that parses args and dispatches
     main()
 
-    if expected_func == 'main_sample':
+    if expected_func == "main_sample":
         mock_main_sample.assert_called_once()
         mock_main_sample_adaptive.assert_not_called()
         mock_main_full_run_optimized.assert_not_called()
-    elif expected_func == 'main_sample_adaptive':
+    elif expected_func == "main_sample_adaptive":
         mock_main_sample.assert_not_called()
         mock_main_sample_adaptive.assert_called_once()
         mock_main_full_run_optimized.assert_not_called()
@@ -207,6 +237,7 @@ def test_main_argparse_dispatch(mocker, mode, expected_func):
 
 
 # --- Test get_adaptive_windows function ---
+
 
 class TestGetAdaptiveWindows:
     """Tests for the get_adaptive_windows utility function."""
@@ -246,6 +277,7 @@ class TestGetAdaptiveWindows:
 
 # --- Test normalize edge cases ---
 
+
 class TestNormalizeEdgeCases:
     """Tests for _normalize method edge cases."""
 
@@ -263,6 +295,7 @@ class TestNormalizeEdgeCases:
 
 # --- Test BatchDataLoader ---
 
+
 class TestBatchDataLoader:
     """Tests for the BatchDataLoader class."""
 
@@ -273,6 +306,7 @@ class TestBatchDataLoader:
         # Create a temporary database
         db_path = tmp_path / "test.db"
         import sqlite3
+
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute("""
@@ -283,14 +317,12 @@ class TestBatchDataLoader:
         # Insert test data with recent dates
         today = datetime.today()
         for i in range(100):
-            date = (today - timedelta(days=100 - i)).strftime('%Y-%m-%d')
+            date = (today - timedelta(days=100 - i)).strftime("%Y-%m-%d")
             cursor.execute(
-                "INSERT INTO daily_quotes VALUES (?, ?, ?)",
-                ("1001", date, 100 + i)
+                "INSERT INTO daily_quotes VALUES (?, ?, ?)", ("1001", date, 100 + i)
             )
             cursor.execute(
-                "INSERT INTO daily_quotes VALUES (?, ?, ?)",
-                ("1002", date, 200 + i)
+                "INSERT INTO daily_quotes VALUES (?, ?, ?)", ("1002", date, 200 + i)
             )
         conn.commit()
         conn.close()
@@ -308,6 +340,7 @@ class TestBatchDataLoader:
         """Test with empty ticker list."""
         db_path = tmp_path / "test.db"
         import sqlite3
+
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute("""
@@ -328,6 +361,7 @@ class TestBatchDataLoader:
         """Test loading a ticker that doesn't exist in the database."""
         db_path = tmp_path / "test.db"
         import sqlite3
+
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute("""
@@ -349,6 +383,7 @@ class TestBatchDataLoader:
         """Test loading data with days > 1000 (long-term analysis mode)."""
         db_path = tmp_path / "test.db"
         import sqlite3
+
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute("""
@@ -358,21 +393,25 @@ class TestBatchDataLoader:
         """)
         # Insert minimal test data
         cursor.execute(
-            "INSERT INTO daily_quotes VALUES (?, ?, ?)",
-            ("1001", "2024-01-01", 100)
+            "INSERT INTO daily_quotes VALUES (?, ?, ?)", ("1001", "2024-01-01", 100)
         )
         conn.commit()
         conn.close()
 
         logger = mocker.MagicMock()
         loader = BatchDataLoader(str(db_path), logger)
-        result = loader.load_all_ticker_data(["1001"], days=1500)
+        loader.load_all_ticker_data(
+            ["1001"], days=1500
+        )  # Result not needed, testing logging
 
         # Should log "Loading ALL available data" message
-        assert any("ALL available data" in str(call) for call in logger.info.call_args_list)
+        assert any(
+            "ALL available data" in str(call) for call in logger.info.call_args_list
+        )
 
 
 # --- Test BatchResultsProcessor ---
+
 
 class TestBatchResultsProcessor:
     """Tests for the BatchResultsProcessor class."""
@@ -381,6 +420,7 @@ class TestBatchResultsProcessor:
         """Test adding results and flushing to database."""
         db_path = tmp_path / "results.db"
         import sqlite3
+
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute("""
@@ -416,6 +456,7 @@ class TestBatchResultsProcessor:
         """Test auto-flush when batch size is reached."""
         db_path = tmp_path / "results.db"
         import sqlite3
+
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute("""
@@ -450,6 +491,7 @@ class TestBatchResultsProcessor:
         """Test that context manager flushes pending results on exit."""
         db_path = tmp_path / "results.db"
         import sqlite3
+
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute("""
@@ -490,6 +532,7 @@ class TestBatchResultsProcessor:
 
 # --- Test DatabaseManager ---
 
+
 class TestDatabaseManager:
     """Tests for the DatabaseManager context manager."""
 
@@ -519,6 +562,7 @@ class TestDatabaseManager:
 
 # --- Test find_best_match edge cases ---
 
+
 class TestFindBestMatchEdgeCases:
     """Tests for _find_best_match edge cases."""
 
@@ -528,15 +572,13 @@ class TestFindBestMatchEdgeCases:
         mock_conn = MagicMock()
         mock_conn.__enter__ = MagicMock(return_value=mock_conn)
         mock_conn.__exit__ = MagicMock(return_value=False)
-        mocker.patch('sqlite3.connect', return_value=mock_conn)
+        mocker.patch("sqlite3.connect", return_value=mock_conn)
 
-        date_index = pd.date_range(start='2024-01-01', periods=30)
+        date_index = pd.date_range(start="2024-01-01", periods=30)
         price_data = pd.Series(np.linspace(100, 200, 30), index=date_index)
 
         classifier = OptimizedChartClassifier(
-            ticker="9999",
-            window=30,
-            price_data=price_data
+            ticker="9999", window=30, price_data=price_data
         )
 
         # Manually add a template with wrong length
@@ -544,8 +586,7 @@ class TestFindBestMatchEdgeCases:
 
         # This should print a warning but not crash
         label, score = classifier._find_best_match(
-            price_data.values,
-            classifier.templates_manual
+            price_data.values, classifier.templates_manual
         )
 
         # Should still return a valid match from correct templates
@@ -558,6 +599,7 @@ class TestFindBestMatchEdgeCases:
 
 # --- Test check_ticker_data_length ---
 
+
 class TestCheckTickerDataLength:
     """Tests for BatchDataLoader.check_ticker_data_length method."""
 
@@ -567,6 +609,7 @@ class TestCheckTickerDataLength:
 
         db_path = tmp_path / "test.db"
         import sqlite3
+
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute("""
@@ -577,10 +620,9 @@ class TestCheckTickerDataLength:
         # Insert 50 days of data
         today = datetime.today()
         for i in range(50):
-            date = (today - timedelta(days=50 - i)).strftime('%Y-%m-%d')
+            date = (today - timedelta(days=50 - i)).strftime("%Y-%m-%d")
             cursor.execute(
-                "INSERT INTO daily_quotes VALUES (?, ?, ?)",
-                ("1001", date, 100 + i)
+                "INSERT INTO daily_quotes VALUES (?, ?, ?)", ("1001", date, 100 + i)
             )
         conn.commit()
         conn.close()
@@ -595,6 +637,7 @@ class TestCheckTickerDataLength:
         """Test checking data length for non-existent ticker."""
         db_path = tmp_path / "test.db"
         import sqlite3
+
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute("""
@@ -614,6 +657,7 @@ class TestCheckTickerDataLength:
 
 # --- Test get_all_tickers error handling ---
 
+
 class TestGetAllTickersErrors:
     """Tests for get_all_tickers error handling."""
 
@@ -626,6 +670,7 @@ class TestGetAllTickersErrors:
 
 # --- Test OptimizedChartClassifier additional cases ---
 
+
 class TestOptimizedChartClassifierAdditional:
     """Additional tests for OptimizedChartClassifier."""
 
@@ -634,16 +679,15 @@ class TestOptimizedChartClassifierAdditional:
         mock_conn = MagicMock()
         mock_conn.__enter__ = MagicMock(return_value=mock_conn)
         mock_conn.__exit__ = MagicMock(return_value=False)
-        mocker.patch('sqlite3.connect', return_value=mock_conn)
+        mocker.patch("sqlite3.connect", return_value=mock_conn)
 
         # Create classifier with empty price data
-        empty_data = pd.Series(dtype=float)
         date_index = pd.DatetimeIndex([])
 
         classifier = OptimizedChartClassifier(
             ticker="9999",
             window=30,
-            price_data=pd.Series([], index=date_index, dtype=float)
+            price_data=pd.Series([], index=date_index, dtype=float),
         )
 
         with pytest.raises(ValueError, match="No price data available"):
@@ -654,16 +698,14 @@ class TestOptimizedChartClassifierAdditional:
         mock_conn = MagicMock()
         mock_conn.__enter__ = MagicMock(return_value=mock_conn)
         mock_conn.__exit__ = MagicMock(return_value=False)
-        mocker.patch('sqlite3.connect', return_value=mock_conn)
+        mocker.patch("sqlite3.connect", return_value=mock_conn)
 
         # Create constant data that would produce NaN correlation
-        date_index = pd.date_range(start='2024-01-01', periods=30)
+        date_index = pd.date_range(start="2024-01-01", periods=30)
         constant_data = pd.Series([100.0] * 30, index=date_index)
 
         classifier = OptimizedChartClassifier(
-            ticker="9999",
-            window=30,
-            price_data=constant_data
+            ticker="9999", window=30, price_data=constant_data
         )
 
         # Should not raise - NaN scores should be handled

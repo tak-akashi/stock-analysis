@@ -82,7 +82,9 @@ def validate_date(date_str: str | None) -> datetime | None:
     try:
         return datetime.strptime(date_str, "%Y-%m-%d")
     except ValueError as e:
-        raise ValueError(f"Invalid date format: {date_str}. Expected YYYY-MM-DD.") from e
+        raise ValueError(
+            f"Invalid date format: {date_str}. Expected YYYY-MM-DD."
+        ) from e
 
 
 def get_default_end_date(conn: sqlite3.Connection) -> datetime:

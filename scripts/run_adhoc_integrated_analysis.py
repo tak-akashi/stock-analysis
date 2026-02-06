@@ -1,4 +1,3 @@
-
 from market_pipeline.analysis.integrated_analysis2 import main
 
 

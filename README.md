@@ -258,6 +258,108 @@ existing = analyzer.load_existing_analysis("7203")
 - `TickerNotFoundError`: 銘柄が見つからない
 - `InsufficientDataError`: データ不足
 
+## Backtester（バックテスト）
+
+シグナルベースのバックテストを実行し、投資戦略の有効性を評価します。
+
+```python
+from technical_tools import Backtester
+
+bt = Backtester(cash=1_000_000)
+
+# シグナル追加
+bt.add_signal("golden_cross", short=5, long=25)
+bt.add_signal("rsi_oversold", threshold=30)
+
+# エグジットルール追加
+bt.add_exit_rule("stop_loss", threshold=-0.10)
+bt.add_exit_rule("take_profit", threshold=0.20)
+
+# バックテスト実行
+results = bt.run(symbols=["7203", "9984"], start="2023-01-01", end="2024-12-31")
+
+# 結果確認
+print(results.summary())  # 勝率、平均リターン、シャープレシオ等
+results.plot().show()     # 資産推移チャート
+trades_df = results.trades()  # 個別取引一覧
+
+# スクリーナー連携バックテスト
+results = bt.run_with_screener(
+    screener_filter={"composite_score_min": 70, "hl_ratio_min": 80},
+    start="2023-01-01",
+    end="2024-12-31",
+    exit_rules={"stop_loss": -0.10, "take_profit": 0.20}
+)
+
+# レポート出力
+results.export("report.xlsx")  # Excel出力
+results.export("report.csv")   # CSV出力
+results.export("report.html")  # HTML出力
+```
+
+**対応シグナル:**
+- `golden_cross`: ゴールデンクロス（短期MAが長期MAを上抜け）
+- `dead_cross`: デッドクロス（短期MAが長期MAを下抜け）
+- `rsi_oversold`: RSI売られすぎ（RSIがthreshold以下）
+- `rsi_overbought`: RSI買われすぎ（RSIがthreshold以上）
+- `macd_cross`: MACDクロス（MACD線がシグナル線を上抜け）
+- `bollinger_breakout`: ボリンジャーバンドブレイクアウト
+- `bollinger_squeeze`: ボリンジャースクイーズ
+- `volume_spike`: 出来高急増
+- `volume_breakout`: 出来高確認付きブレイクアウト
+
+**対応エグジットルール:**
+- `stop_loss`: 損切り（threshold: 負の値、例: -0.10）
+- `take_profit`: 利確（threshold: 正の値、例: 0.20）
+- `max_holding_days`: 最大保有日数
+- `trailing_stop`: トレーリングストップ
+
+## VirtualPortfolio（仮想ポートフォリオ）
+
+仮想ポートフォリオを作成し、パフォーマンスを追跡します。
+
+```python
+from technical_tools import VirtualPortfolio
+
+# ポートフォリオ作成（data/portfolios/に永続化）
+vp = VirtualPortfolio("my_strategy_2025")
+
+# 銘柄購入
+vp.buy("7203", shares=100, price=2500)  # 株数指定
+vp.buy("9984", amount=500000)           # 金額指定（現在価格で株数計算）
+
+# サマリー確認
+print(vp.summary())  # 投資額、評価額、損益、リターン率
+
+# 保有銘柄一覧
+holdings = vp.holdings()  # DataFrame
+
+# パフォーマンス推移
+perf = vp.performance(days=30)  # 日次評価額推移
+
+# チャート表示
+vp.plot().show()
+
+# 売却
+vp.sell("7203", shares=50)  # 一部売却
+vp.sell_all("9984")         # 全売却
+
+# スクリーナー結果から一括購入
+vp.buy_from_screener(
+    screener_filter={"composite_score_min": 80},
+    amount_per_stock=100000,  # 各銘柄10万円
+    max_stocks=10
+)
+```
+
+**機能:**
+- JSON永続化（data/portfolios/*.json）
+- 平均取得単価の自動計算
+- スクリーナー結果からの一括銘柄追加
+- 現在価格はmarket_readerから自動取得
+- 取引履歴の記録
+- plotlyによるインタラクティブチャート
+
 ## Stock Screener（銘柄スクリーニング）
 
 統合分析結果をDBから取得し、柔軟にフィルタリングするツールです。
@@ -322,7 +424,7 @@ history = screener.history("7203", days=30)
 *   aiohttp: 非同期HTTPリクエスト（J-Quants API用）
 *   requests: HTTPリクエスト
 *   pydantic-settings: 設定管理
-*   backtrader: バックテストフレームワーク（現在未使用の可能性あり）
+*   backtesting: バックテストフレームワーク（technical_tools/backtester.pyで使用）
 *   matplotlib: グラフ描画（チャート分類で使用）
 *   plotly: インタラクティブチャート（technical_toolsで使用）
 *   yfinance: 米国株データ取得（technical_toolsで使用）

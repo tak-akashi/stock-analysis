@@ -4,9 +4,59 @@
 
 ## [Unreleased]
 
+### Added
+- `backend/technical_tools/backtester.py`: シグナルベースバックテストエンジン
+  - `Backtester`クラス: backtesting.pyをラップしたシンプルなAPI
+  - `add_signal()`: プラグイン形式のシグナル追加
+  - `add_exit_rule()`: エグジットルール追加（stop_loss, take_profit, max_holding_days, trailing_stop）
+  - `run()`: 並列処理対応のバックテスト実行
+  - `run_with_screener()`: StockScreener連携バックテスト
+- `backend/technical_tools/backtest_results.py`: バックテスト結果分析クラス
+  - `BacktestResults`: 結果の保持・分析・可視化
+  - `summary()`: パフォーマンス指標（勝率、シャープレシオ、最大DD等）
+  - `plot()`: plotlyによる資産推移・ドローダウンチャート
+  - `export()`: CSV/Excel/HTML出力
+  - `by_symbol()`, `by_sector()`, `monthly_returns()`, `yearly_returns()`: 詳細分析
+  - `Trade`データクラス: 個別取引情報
+- `backend/technical_tools/virtual_portfolio.py`: 仮想ポートフォリオ管理
+  - `VirtualPortfolio`クラス: JSON永続化対応の仮想ポートフォリオ
+  - `buy()`: 株数指定または金額指定での購入
+  - `sell()`, `sell_all()`: 売却
+  - `summary()`, `holdings()`, `performance()`: 状態確認
+  - `plot()`: plotlyによるポートフォリオチャート
+  - `buy_from_screener()`: StockScreener連携の一括購入
+- `backend/technical_tools/backtest_signals/`: バックテスト用シグナルモジュール
+  - `BaseSignal`: シグナル抽象基底クラス
+  - `SignalRegistry`: シグナルのプラグイン登録・取得
+  - 対応シグナル: golden_cross, dead_cross, rsi_oversold, rsi_overbought, macd_cross, bollinger_breakout, bollinger_squeeze, volume_spike, volume_breakout
+- `backend/technical_tools/exceptions.py`: バックテスト・ポートフォリオ関連例外追加
+  - `BacktestError`, `BacktestInsufficientDataError`, `InvalidSignalError`, `InvalidRuleError`, `PortfolioError`
+- テストファイル追加:
+  - `tests/test_backtester.py`: Backtesterクラステスト
+  - `tests/test_backtest_results.py`: BacktestResultsクラステスト
+  - `tests/test_backtest_signals.py`: バックテストシグナルテスト
+  - `tests/test_virtual_portfolio.py`: VirtualPortfolioクラステスト
+- `data/portfolios/`: VirtualPortfolio用JSONファイル格納ディレクトリ（.gitignore追加）
+- `pyproject.toml`: `backtesting>=0.3.3` 依存関係追加
+
 ### Fixed
 - `backend/technical_tools/data_sources/jquants.py`: 株式分割を考慮した調整後価格（AdjustmentOpen/High/Low/Close/Volume）を使用するように修正
   - 以前は未調整価格（Open/High/Low/Close/Volume）を使用していたため、株式分割時にチャートにギャップが生じていた
+
+### Changed
+- `backend/technical_tools/__init__.py`: Backtester, BacktestResults, Trade, VirtualPortfolio, 新例外クラスをエクスポート追加
+- パッケージバージョンを0.2.0に更新
+
+### Documentation
+- `CLAUDE.md`: Backtester, VirtualPortfolio使用例とAPI説明追加
+- `README.md`: Backtester, VirtualPortfolioセクション追加
+- `docs/core/api-reference.md`: Backtester, BacktestResults, VirtualPortfolio API仕様追加
+- `docs/core/architecture.md`: バックテスト・シミュレーションレイヤー追加
+- `docs/core/repo-structure.md`: 新規ファイル・ディレクトリ追加
+
+---
+
+## [Previous]
 
 ### Added
 - `backend/market_reader/` パッケージ: pandas_datareader風のデータアクセスAPI（旧 `stock_reader/`）

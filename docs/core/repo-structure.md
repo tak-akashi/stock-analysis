@@ -61,11 +61,22 @@ Stock-Analysis/
 │       ├── charts.py                     # plotlyによるチャート生成
 │       ├── integration.py                # 既存分析結果との連携
 │       ├── exceptions.py                 # カスタム例外クラス
-│       └── data_sources/                 # データソース抽象化
-│           ├── __init__.py
-│           ├── base.py                   # DataSource抽象基底クラス
-│           ├── jquants.py                # J-Quantsデータソース（market_reader経由）
-│           └── yfinance.py               # yfinanceデータソース
+│       ├── backtester.py                 # Backtesterクラス（バックテスト実行）
+│       ├── backtest_results.py           # BacktestResultsクラス（結果分析）
+│       ├── virtual_portfolio.py          # VirtualPortfolioクラス（仮想ポートフォリオ）
+│       ├── data_sources/                 # データソース抽象化
+│       │   ├── __init__.py
+│       │   ├── base.py                   # DataSource抽象基底クラス
+│       │   ├── jquants.py                # J-Quantsデータソース（market_reader経由）
+│       │   └── yfinance.py               # yfinanceデータソース
+│       └── backtest_signals/             # バックテスト用シグナル定義
+│           ├── __init__.py               # SignalRegistryエクスポート
+│           ├── base.py                   # BaseSignal抽象基底クラス
+│           ├── moving_average.py         # GoldenCross/DeadCrossシグナル
+│           ├── rsi.py                    # RSIOversold/RSIOverboughtシグナル
+│           ├── macd.py                   # MACDCrossシグナル
+│           ├── bollinger.py              # BollingerBreakout/Squeezeシグナル
+│           └── volume.py                 # VolumeSpike/VolumeBreakoutシグナル
 │
 ├── scripts/                          # 実行スクリプト（cron用）
 │   ├── run_daily_jquants.py          # 日次株価取得（平日22:00）
@@ -104,7 +115,9 @@ Stock-Analysis/
 │   ├── statements.db                 # 財務諸表（30MB）
 │   ├── analysis_results.db           # 分析結果（1.7GB）
 │   ├── master.db                     # 銘柄マスター（964KB）
-│   └── yfinance.db                   # レガシー（1.4MB）
+│   ├── yfinance.db                   # レガシー（1.4MB）
+│   └── portfolios/                   # VirtualPortfolio用JSONファイル（.gitignore）
+│       └── *.json
 │
 ├── output/                           # 出力ファイル
 │   ├── analysis_YYYY-MM-DD.xlsx      # 日次分析レポート
@@ -178,6 +191,10 @@ Stock-Analysis/
 | `backend/technical_tools/signals.py` | シグナル検出（ゴールデンクロス/デッドクロス） |
 | `backend/technical_tools/charts.py` | plotlyインタラクティブチャート生成 |
 | `backend/technical_tools/screener.py` | StockScreenerクラス（銘柄スクリーニング） |
+| `backend/technical_tools/backtester.py` | Backtesterクラス（シグナルベースバックテスト） |
+| `backend/technical_tools/backtest_results.py` | BacktestResultsクラス（結果分析・可視化） |
+| `backend/technical_tools/virtual_portfolio.py` | VirtualPortfolioクラス（仮想ポートフォリオ） |
+| `backend/technical_tools/backtest_signals/` | バックテスト用シグナル定義（プラグイン形式） |
 
 ### スクリプト
 
@@ -218,6 +235,10 @@ Stock-Analysis/
 | `tests/test_technical_tools.py` | technical_toolsパッケージ |
 | `tests/test_integrated_scores.py` | IntegratedScoresRepository |
 | `tests/test_stock_screener.py` | StockScreenerクラス |
+| `tests/test_backtester.py` | Backtesterクラス |
+| `tests/test_backtest_results.py` | BacktestResultsクラス |
+| `tests/test_backtest_signals.py` | バックテストシグナル |
+| `tests/test_virtual_portfolio.py` | VirtualPortfolioクラス |
 | `tests/test_type8_optimization.py` | Type8最適化 |
 | `tests/test_rsi_optimization.py` | RSI最適化 |
 | `tests/test_fixes.py` | バグ修正検証 |

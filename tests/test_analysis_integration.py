@@ -36,17 +36,17 @@ def setup_test_environment(tmp_path):
     """)
     end_date = datetime(2023, 12, 31)
     for i in range(300):
-        date = (end_date - timedelta(days=i)).strftime('%Y-%m-%d')
+        date = (end_date - timedelta(days=i)).strftime("%Y-%m-%d")
         price = 1000 + i
         source_cursor.execute(
             "INSERT INTO daily_quotes VALUES (?, '9999', ?, ?, ?, ?, 10000, ?)",
-            (date, price, price + 10, price - 10, price, price)
+            (date, price, price + 10, price - 10, price, price),
         )
     source_conn.commit()
     source_conn.close()
 
     # 4. Patch MinerviniConfig to use the temporary paths
-    with patch('market_pipeline.analysis.minervini.MinerviniConfig') as mock_config:
+    with patch("market_pipeline.analysis.minervini.MinerviniConfig") as mock_config:
         mock_instance = mock_config.return_value
         mock_instance.base_dir = tmp_path
         mock_instance.data_dir = data_dir
@@ -54,11 +54,13 @@ def setup_test_environment(tmp_path):
         mock_instance.output_dir = output_dir
         mock_instance.jquants_db_path = jquants_db_path
         mock_instance.results_db_path = results_db_path
-        
-        yield # The test runs here
+
+        yield  # The test runs here
 
 
-@pytest.mark.skip(reason="Integration test requires significant mocking setup that is out of date with current implementation")
+@pytest.mark.skip(
+    reason="Integration test requires significant mocking setup that is out of date with current implementation"
+)
 def test_run_daily_analysis_full_flow(setup_test_environment):
     """
     Tests the entire daily analysis workflow from start to finish.
@@ -68,21 +70,26 @@ def test_run_daily_analysis_full_flow(setup_test_environment):
     3. Run the analysis again, verifying that the results are updated correctly.
     """
     # --- 1. First Run (Initialization) ---
-    with patch('scripts.run_daily_analysis.datetime') as mock_datetime:
+    with patch("scripts.run_daily_analysis.datetime") as mock_datetime:
         # Mock the date to a fixed point for reproducible results
         mock_datetime.now.return_value = datetime(2023, 12, 31)
-        
+
         success = run_daily_analysis()
         assert success, "run_daily_analysis reported a failure on the first run."
 
     # Verify the results of the first run
-    config = MinerviniConfig() # This will be the patched config
+    config = MinerviniConfig()  # This will be the patched config
     results_conn = sqlite3.connect(config.results_db_path)
-    
+
     # Check that all tables were created
-    for table_name in ['relative_strength', 'minervini', 'hl_ratio']:
-        df = pd.read_sql(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'", results_conn)
-        assert not df.empty, f"Table '{table_name}' was not created in the results database."
+    for table_name in ["relative_strength", "minervini", "hl_ratio"]:
+        df = pd.read_sql(
+            f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'",
+            results_conn,
+        )
+        assert not df.empty, (
+            f"Table '{table_name}' was not created in the results database."
+        )
 
     # Check that data was populated
     minervini_df = pd.read_sql("SELECT * FROM minervini", results_conn)
@@ -95,7 +102,7 @@ def test_run_daily_analysis_full_flow(setup_test_environment):
     results_conn.close()
 
     # --- 2. Second Run (Update) ---
-    
+
     # Add new data to the source jquants.db
     source_conn = sqlite3.connect(config.jquants_db_path)
     source_cursor = source_conn.cursor()
@@ -106,22 +113,26 @@ def test_run_daily_analysis_full_flow(setup_test_environment):
     source_conn.close()
 
     # Run the analysis again for the new date
-    with patch('scripts.run_daily_analysis.datetime') as mock_datetime:
+    with patch("scripts.run_daily_analysis.datetime") as mock_datetime:
         mock_datetime.now.return_value = datetime(2024, 1, 1)
-        
+
         success = run_daily_analysis()
         assert success, "run_daily_analysis reported a failure on the second run."
 
     # Verify the results of the second run
     results_conn = sqlite3.connect(config.results_db_path)
-    
+
     # Minervini should have new rows added
     updated_minervini_df = pd.read_sql("SELECT * FROM minervini", results_conn)
-    assert len(updated_minervini_df) > initial_minervini_count, "Minervini table was not updated."
+    assert len(updated_minervini_df) > initial_minervini_count, (
+        "Minervini table was not updated."
+    )
 
     # hl_ratio table should be replaced with new data for the new date
     updated_hl_ratio_df = pd.read_sql("SELECT * FROM hl_ratio", results_conn)
     assert not updated_hl_ratio_df.empty
-    assert updated_hl_ratio_df.iloc[0]['Date'] == '2024-01-01', "hl_ratio table was not replaced with new date's data."
+    assert updated_hl_ratio_df.iloc[0]["Date"] == "2024-01-01", (
+        "hl_ratio table was not replaced with new date's data."
+    )
 
     results_conn.close()

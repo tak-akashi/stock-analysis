@@ -19,16 +19,16 @@ class ColoredFormatter(logging.Formatter):
     """カラー付きログフォーマッター"""
 
     COLORS = {
-        'DEBUG': '\033[36m',    # シアン
-        'INFO': '\033[32m',     # 緑
-        'WARNING': '\033[33m',  # 黄
-        'ERROR': '\033[31m',    # 赤
-        'CRITICAL': '\033[35m', # マゼンタ
+        "DEBUG": "\033[36m",  # シアン
+        "INFO": "\033[32m",  # 緑
+        "WARNING": "\033[33m",  # 黄
+        "ERROR": "\033[31m",  # 赤
+        "CRITICAL": "\033[35m",  # マゼンタ
     }
-    RESET = '\033[0m'
+    RESET = "\033[0m"
 
     def format(self, record):
-        color = self.COLORS.get(record.levelname, '')
+        color = self.COLORS.get(record.levelname, "")
         record.levelname = f"{color}{record.levelname}{self.RESET}"
         return super().format(record)
 
@@ -36,13 +36,10 @@ class ColoredFormatter(logging.Formatter):
 def setup_logging():
     """ログ設定 - バックエンドモジュールのログをカラー表示"""
     handler = logging.StreamHandler()
-    handler.setFormatter(ColoredFormatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    ))
-    logging.basicConfig(
-        level=logging.INFO,
-        handlers=[handler]
+    handler.setFormatter(
+        ColoredFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     )
+    logging.basicConfig(level=logging.INFO, handlers=[handler])
 
 
 def parse_args():
@@ -51,9 +48,7 @@ def parse_args():
     parser.add_argument(
         "--statements-only", action="store_true", help="財務諸表データ取得のみ実行"
     )
-    parser.add_argument(
-        "--analysis-only", action="store_true", help="統合分析のみ実行"
-    )
+    parser.add_argument("--analysis-only", action="store_true", help="統合分析のみ実行")
     return parser.parse_args()
 
 
@@ -84,7 +79,9 @@ def main():
             )
 
             # 1. 財務諸表データを取得
-            from market_pipeline.jquants.statements_processor import JQuantsStatementsProcessor
+            from market_pipeline.jquants.statements_processor import (
+                JQuantsStatementsProcessor,
+            )
 
             processor = JQuantsStatementsProcessor(
                 max_concurrent_requests=settings.jquants.max_concurrent_requests,
@@ -96,20 +93,28 @@ def main():
 
             # 2. 財務指標を計算
             print(f"=== 財務指標計算開始 {datetime.now()} ===")
-            from market_pipeline.jquants.fundamentals_calculator import FundamentalsCalculator
+            from market_pipeline.jquants.fundamentals_calculator import (
+                FundamentalsCalculator,
+            )
 
             calculator = FundamentalsCalculator(
                 statements_db_path=str(settings.paths.statements_db),
                 jquants_db_path=str(settings.paths.jquants_db),
             )
-            processed = calculator.update_all_fundamentals(str(settings.paths.statements_db))
+            processed = calculator.update_all_fundamentals(
+                str(settings.paths.statements_db)
+            )
             print(f"    {processed} 銘柄の財務指標を計算しました")
             print(f"=== 財務指標計算完了 {datetime.now()} ===")
 
         if run_analysis:
             print(f"=== 統合分析処理開始 {datetime.now()} ===")
             analysis_script_path = (
-                settings.paths.base_dir / "backend" / "market_pipeline" / "analysis" / "integrated_analysis2.py"
+                settings.paths.base_dir
+                / "backend"
+                / "market_pipeline"
+                / "analysis"
+                / "integrated_analysis2.py"
             )
             subprocess.run([sys.executable, str(analysis_script_path)], check=True)
             print(f"=== 統合分析処理完了 {datetime.now()} ===")
@@ -119,6 +124,7 @@ def main():
     except Exception as e:
         print(f"エラーが発生しました: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

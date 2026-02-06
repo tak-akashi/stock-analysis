@@ -140,7 +140,7 @@ class TestIntegratedScoresRepository:
         """Test getting history for a specific code."""
         # Save multiple days of data
         for i in range(5):
-            date = f"2026-02-0{i+1}"
+            date = f"2026-02-0{i + 1}"
             df = sample_scores_df.copy()
             df["composite_score"] = df["composite_score"] + i
             repository.save_scores(df, date)

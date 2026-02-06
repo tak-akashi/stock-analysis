@@ -29,3 +29,55 @@ class InsufficientDataError(TechnicalToolsError):
         self.required = required
         self.actual = actual
         super().__init__(f"Insufficient data: required {required} rows, got {actual}")
+
+
+# Backtest-related exceptions
+
+
+class BacktestError(TechnicalToolsError):
+    """Base exception for backtest-related errors."""
+
+    pass
+
+
+class BacktestInsufficientDataError(BacktestError):
+    """Insufficient data for backtesting."""
+
+    def __init__(self, symbol: str, required: int, actual: int) -> None:
+        self.symbol = symbol
+        self.required = required
+        self.actual = actual
+        super().__init__(
+            f"Insufficient data for {symbol}: required {required} rows, got {actual}"
+        )
+
+
+class InvalidSignalError(BacktestError):
+    """Invalid signal name or parameters."""
+
+    def __init__(self, signal_name: str, message: str | None = None) -> None:
+        self.signal_name = signal_name
+        msg = f"Invalid signal: '{signal_name}'"
+        if message:
+            msg += f" - {message}"
+        super().__init__(msg)
+
+
+class InvalidRuleError(BacktestError):
+    """Invalid rule name or parameters."""
+
+    def __init__(self, rule_name: str, message: str | None = None) -> None:
+        self.rule_name = rule_name
+        msg = f"Invalid rule: '{rule_name}'"
+        if message:
+            msg += f" - {message}"
+        super().__init__(msg)
+
+
+# Portfolio-related exceptions
+
+
+class PortfolioError(TechnicalToolsError):
+    """Base exception for portfolio-related errors."""
+
+    pass

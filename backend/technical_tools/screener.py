@@ -448,9 +448,7 @@ class StockScreener:
                   AND h.past_rank IS NOT NULL
             """
 
-            df = pd.read_sql(
-                query, conn, params=[latest_date, latest_date, days - 1]
-            )
+            df = pd.read_sql(query, conn, params=[latest_date, latest_date, days - 1])
 
         if df.empty:
             return df
