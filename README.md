@@ -360,6 +360,87 @@ vp.buy_from_screener(
 - 取引履歴の記録
 - plotlyによるインタラクティブチャート
 
+## StrategyOptimizer（戦略最適化）
+
+投資戦略のパラメータを自動最適化し、最適な戦略を発見します。
+
+```python
+from technical_tools import StrategyOptimizer
+
+optimizer = StrategyOptimizer(cash=1_000_000)
+
+# 探索空間の定義
+optimizer.add_search_space("ma_short", [5, 10, 20, 25])
+optimizer.add_search_space("ma_long", [50, 75, 100, 200])
+optimizer.add_search_space("stop_loss", [-0.05, -0.10, -0.15])
+
+# 制約条件の追加
+optimizer.add_constraint(lambda p: p["ma_short"] < p["ma_long"])
+
+# グリッドサーチで最適化
+results = optimizer.run(
+    symbols=["7203", "9984"],
+    start="2023-01-01",
+    end="2024-12-31",
+    method="grid",        # "grid" or "random"
+    metric="sharpe_ratio" # 最適化対象指標
+)
+
+# 結果分析
+best = results.best()           # 最良の戦略
+print(best.params)              # {'ma_short': 10, 'ma_long': 75, 'stop_loss': -0.10}
+print(best.metrics)             # {'sharpe_ratio': 1.5, 'win_rate': 0.6, ...}
+
+top10 = results.top(10)         # 上位10件をDataFrameで取得
+
+# 可視化
+fig = results.plot_heatmap("ma_short", "ma_long", metric="sharpe_ratio")
+fig.show()
+
+# 結果の保存・読み込み
+results.save("optimization_results.json")
+```
+
+**探索手法:**
+- `grid`: グリッドサーチ（全組み合わせ探索）
+- `random`: ランダムサーチ（n_trials回のサンプリング）
+
+**対応パラメータ:**
+- MAクロス: `ma_short`, `ma_long`
+- RSI: `rsi_threshold`
+- MACD: `macd_fast`, `macd_slow`, `macd_signal`
+- エグジット: `stop_loss`, `take_profit`
+
+**評価指標:**
+- `total_return`: トータルリターン
+- `sharpe_ratio`: シャープレシオ
+- `max_drawdown`: 最大ドローダウン（最小化）
+- `win_rate`: 勝率
+- `profit_factor`: プロフィットファクター
+
+**複合評価（重み付け）:**
+```python
+results = optimizer.run(
+    ...,
+    metric={
+        "sharpe_ratio": 0.5,
+        "max_drawdown": 0.3,
+        "win_rate": 0.2
+    }
+)
+```
+
+**ウォークフォワード分析（過学習対策）:**
+```python
+results = optimizer.run(
+    ...,
+    validation="walk_forward",
+    train_ratio=0.7,
+    n_splits=5
+)
+print(results.best().oos_metrics)  # アウトオブサンプル評価
+```
+
 ## Stock Screener（銘柄スクリーニング）
 
 統合分析結果をDBから取得し、柔軟にフィルタリングするツールです。

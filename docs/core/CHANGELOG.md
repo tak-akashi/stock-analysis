@@ -5,6 +5,29 @@
 ## [Unreleased]
 
 ### Added
+- `backend/technical_tools/optimizer.py`: 戦略パラメータ最適化エンジン
+  - `StrategyOptimizer`クラス: Backtesterを利用したパラメータ最適化
+  - `add_search_space()`: 探索パラメータの定義（MA期間、RSI閾値、エグジットルール等）
+  - `add_constraint()`: パラメータ制約条件の追加
+  - `run()`: グリッドサーチ/ランダムサーチによる最適化実行
+  - 並列処理対応（ThreadPoolExecutor）
+  - ウォークフォワード分析（過学習対策）
+  - タイムアウト機能
+  - ストリーミング出力（JSONL形式）
+- `backend/technical_tools/optimization_results.py`: 最適化結果分析クラス
+  - `OptimizationResults`: 結果の保持・分析・可視化
+  - `TrialResult`: 個別試行結果データクラス
+  - `best()`: 最良パラメータの取得
+  - `top()`: 上位N件をDataFrameで取得
+  - `plot_heatmap()`: パラメータ空間のヒートマップ可視化
+  - `save()`/`load()`: JSON/CSV形式での永続化
+  - `load_streaming()`: JSONL形式からの読み込み
+- `backend/technical_tools/exceptions.py`: 最適化関連例外追加
+  - `OptimizerError`, `InvalidSearchSpaceError`, `NoValidParametersError`, `OptimizationTimeoutError`
+- テストファイル追加:
+  - `tests/test_optimizer.py`: StrategyOptimizerクラステスト
+  - `tests/test_optimization_results.py`: OptimizationResultsクラステスト
+
 - `backend/technical_tools/backtester.py`: シグナルベースバックテストエンジン
   - `Backtester`クラス: backtesting.pyをラップしたシンプルなAPI
   - `add_signal()`: プラグイン形式のシグナル追加
@@ -44,12 +67,15 @@
   - 以前は未調整価格（Open/High/Low/Close/Volume）を使用していたため、株式分割時にチャートにギャップが生じていた
 
 ### Changed
+- `backend/technical_tools/__init__.py`: StrategyOptimizer, OptimizationResults, TrialResult, 最適化例外クラスをエクスポート追加
 - `backend/technical_tools/__init__.py`: Backtester, BacktestResults, Trade, VirtualPortfolio, 新例外クラスをエクスポート追加
 - パッケージバージョンを0.2.0に更新
 
 ### Documentation
+- `CLAUDE.md`: StrategyOptimizer使用例とAPI説明追加
 - `CLAUDE.md`: Backtester, VirtualPortfolio使用例とAPI説明追加
 - `README.md`: Backtester, VirtualPortfolioセクション追加
+- `docs/core/api-reference.md`: StrategyOptimizer, OptimizationResults API仕様追加
 - `docs/core/api-reference.md`: Backtester, BacktestResults, VirtualPortfolio API仕様追加
 - `docs/core/architecture.md`: バックテスト・シミュレーションレイヤー追加
 - `docs/core/repo-structure.md`: 新規ファイル・ディレクトリ追加

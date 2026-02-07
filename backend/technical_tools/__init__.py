@@ -47,11 +47,17 @@ from .exceptions import (
     DataSourceError,
     InsufficientDataError,
     InvalidRuleError,
+    InvalidSearchSpaceError,
     InvalidSignalError,
+    NoValidParametersError,
+    OptimizationTimeoutError,
+    OptimizerError,
     PortfolioError,
     TechnicalToolsError,
     TickerNotFoundError,
 )
+from .optimization_results import OptimizationResults, TrialResult
+from .optimizer import StrategyOptimizer
 from .screener import ScreenerFilter, StockScreener
 from .signals import Signal
 from .virtual_portfolio import VirtualPortfolio
@@ -67,6 +73,10 @@ __all__ = [
     "BacktestResults",
     "Trade",
     "VirtualPortfolio",
+    # Optimizer
+    "StrategyOptimizer",
+    "OptimizationResults",
+    "TrialResult",
     # Exceptions
     "TechnicalToolsError",
     "DataSourceError",
@@ -77,6 +87,10 @@ __all__ = [
     "InvalidSignalError",
     "InvalidRuleError",
     "PortfolioError",
+    "OptimizerError",
+    "InvalidSearchSpaceError",
+    "NoValidParametersError",
+    "OptimizationTimeoutError",
 ]
 
 __version__ = "0.2.0"

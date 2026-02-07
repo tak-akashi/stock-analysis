@@ -385,6 +385,10 @@ from technical_tools import Signal
 | `InvalidSignalError` | 無効なシグナル指定 |
 | `InvalidRuleError` | 無効なルール指定 |
 | `PortfolioError` | ポートフォリオ関連エラー |
+| `OptimizerError` | 最適化関連の基底エラー |
+| `InvalidSearchSpaceError` | 探索空間の定義が不正 |
+| `NoValidParametersError` | 有効なパラメータ組み合わせがない |
+| `OptimizationTimeoutError` | 最適化タイムアウト |
 
 ### StockScreener
 
@@ -913,6 +917,225 @@ VirtualPortfolio(name: str, portfolio_dir: Path | None = None)
 - `max_stocks` (`int`): 最大購入銘柄数
 - `screener` (`StockScreener | None`): スクリーナーインスタンス
 - `**filter_kwargs`: フィルターパラメータ（screener_filterがNoneの場合）
+
+### StrategyOptimizer
+
+```python
+from technical_tools import StrategyOptimizer
+
+optimizer = StrategyOptimizer(cash=1_000_000)
+optimizer.add_search_space("ma_short", [5, 10, 20])
+optimizer.add_search_space("ma_long", [50, 75, 100])
+optimizer.add_constraint(lambda p: p["ma_short"] < p["ma_long"])
+results = optimizer.run(
+    symbols=["7203"],
+    start="2023-01-01",
+    end="2023-12-31",
+    method="grid",
+    metric="sharpe_ratio"
+)
+```
+
+投資戦略のパラメータを自動最適化するクラス。Backtesterを内部で利用し、複数のパラメータ組み合わせを効率的に評価。
+
+#### コンストラクタ
+
+```python
+StrategyOptimizer(cash: float = 1_000_000, commission: float = 0.0)
+```
+
+**パラメータ**:
+- `cash`: 初期資金（デフォルト: 1,000,000）
+- `commission`: 取引手数料率（デフォルト: 0）
+
+#### メソッド
+
+##### `add_search_space(name, values) -> StrategyOptimizer`
+
+探索空間にパラメータを追加。
+
+**パラメータ**:
+- `name` (`str`): パラメータ名
+- `values` (`list[Any]`): 探索する値のリスト
+
+**対応パラメータ**:
+
+| パラメータ名 | 説明 | 例 |
+|-------------|------|-----|
+| `ma_short` | 短期移動平均期間 | [5, 10, 20, 25] |
+| `ma_long` | 長期移動平均期間 | [50, 75, 100, 200] |
+| `rsi_threshold` | RSI閾値 | [20, 25, 30, 35] |
+| `macd_fast` | MACD短期EMA | [8, 10, 12] |
+| `macd_slow` | MACD長期EMA | [20, 24, 26] |
+| `macd_signal` | MACDシグナル線 | [7, 9, 11] |
+| `stop_loss` | 損切り閾値 | [-0.05, -0.10, -0.15] |
+| `take_profit` | 利確閾値 | [0.10, 0.15, 0.20] |
+
+**戻り値**: `StrategyOptimizer` - メソッドチェーン用
+
+**例外**: `ValueError` - パラメータ名が空、または値リストが空の場合
+
+##### `add_constraint(func) -> StrategyOptimizer`
+
+パラメータ制約条件を追加。
+
+**パラメータ**:
+- `func` (`Callable[[dict[str, Any]], bool]`): パラメータ辞書を受け取りTrueなら有効とする関数
+
+**戻り値**: `StrategyOptimizer` - メソッドチェーン用
+
+##### `run(symbols, start, end, method="grid", n_trials=100, metric="sharpe_ratio", n_jobs=-1, validation=None, train_ratio=0.7, n_splits=5, timeout=None, streaming_output=None) -> OptimizationResults`
+
+最適化を実行。
+
+**パラメータ**:
+- `symbols` (`list[str]`): 対象銘柄リスト
+- `start` (`str`): 開始日（YYYY-MM-DD）
+- `end` (`str`): 終了日（YYYY-MM-DD）
+- `method` (`Literal["grid", "random"]`): 探索手法（デフォルト: "grid"）
+- `n_trials` (`int`): ランダムサーチ時の試行回数（デフォルト: 100）
+- `metric` (`str | dict[str, float]`): 最適化対象指標（デフォルト: "sharpe_ratio"）
+- `n_jobs` (`int`): 並列数（-1で全コア使用、デフォルト: -1）
+- `validation` (`Literal["none", "walk_forward"] | None`): 検証手法
+- `train_ratio` (`float`): 訓練期間の割合（デフォルト: 0.7）
+- `n_splits` (`int`): 分割数（デフォルト: 5）
+- `timeout` (`float | None`): タイムアウト秒数
+- `streaming_output` (`str | Path | None`): JSONL形式のストリーミング出力パス
+
+**探索手法**:
+
+| 手法 | 説明 |
+|------|------|
+| `grid` | 全パラメータ組み合わせを探索 |
+| `random` | n_trials回のランダムサンプリング |
+
+**評価指標**:
+
+| 指標 | 説明 | 最適化方向 |
+|------|------|----------|
+| `total_return` | トータルリターン | 最大化 |
+| `sharpe_ratio` | シャープレシオ | 最大化 |
+| `max_drawdown` | 最大ドローダウン | 最小化 |
+| `win_rate` | 勝率 | 最大化 |
+| `profit_factor` | プロフィットファクター | 最大化 |
+
+**複合評価（重み付け）**:
+
+```python
+results = optimizer.run(
+    ...,
+    metric={
+        "sharpe_ratio": 0.5,
+        "max_drawdown": 0.3,
+        "win_rate": 0.2
+    }
+)
+```
+
+**戻り値**: `OptimizationResults`
+
+**例外**:
+- `InvalidSearchSpaceError`: 探索空間が未定義
+- `NoValidParametersError`: 制約条件を満たすパラメータがない
+- `OptimizationTimeoutError`: タイムアウト発生
+
+### OptimizationResults
+
+```python
+results = optimizer.run(...)
+best = results.best()
+top_10 = results.top(10)
+results.plot_heatmap("ma_short", "ma_long").show()
+results.save("results.json")
+```
+
+最適化結果を保持し、分析・可視化を提供するクラス。
+
+#### メソッド
+
+##### `best() -> TrialResult | None`
+
+最良の試行結果を取得。
+
+**戻り値**: `TrialResult` - 最良の結果、またはNone
+
+##### `top(n=10) -> pd.DataFrame`
+
+上位N件をDataFrameで取得。
+
+**パラメータ**:
+- `n` (`int`): 取得件数（デフォルト: 10）
+
+**戻り値**: `pd.DataFrame` - パラメータと評価指標を含むDataFrame
+
+##### `plot_heatmap(x_param, y_param, metric="sharpe_ratio") -> go.Figure`
+
+パラメータ空間のヒートマップを生成。
+
+**パラメータ**:
+- `x_param` (`str`): X軸パラメータ
+- `y_param` (`str`): Y軸パラメータ
+- `metric` (`str`): 可視化する指標（デフォルト: "sharpe_ratio"）
+
+**戻り値**: `go.Figure` - Plotly Figure
+
+**例外**: `ValueError` - パラメータが探索空間に存在しない
+
+##### `save(path) -> Path`
+
+結果をファイルに保存。
+
+**パラメータ**:
+- `path` (`str | Path`): 出力パス（.json または .csv）
+
+**戻り値**: `Path` - 保存されたファイルパス
+
+##### `load(path) -> OptimizationResults` (classmethod)
+
+JSONファイルから結果を読み込み。
+
+**パラメータ**:
+- `path` (`str | Path`): 入力ファイルパス
+
+**戻り値**: `OptimizationResults`
+
+##### `load_streaming(path, metric="sharpe_ratio") -> OptimizationResults` (classmethod)
+
+JSONLファイル（ストリーミング出力）から結果を読み込み。
+
+**パラメータ**:
+- `path` (`str | Path`): 入力JONLファイルパス
+- `metric` (`str | dict[str, float]`): ソート用評価指標
+
+**戻り値**: `OptimizationResults`
+
+### TrialResult
+
+1回の最適化試行結果を保持するデータクラス。
+
+```python
+from technical_tools import TrialResult
+```
+
+**属性**:
+- `params` (`dict[str, Any]`): 使用したパラメータ
+- `metrics` (`dict[str, float]`): 評価指標
+- `oos_metrics` (`dict[str, float] | None`): アウトオブサンプル評価（ウォークフォワード時）
+- `backtest_results` (`BacktestResults | None`): バックテスト結果（メモリ節約のためNoneの場合あり）
+
+### 最適化関連例外
+
+| クラス | 説明 |
+|--------|------|
+| `OptimizerError` | 最適化関連エラーの基底クラス |
+| `InvalidSearchSpaceError` | 探索空間の定義が不正 |
+| `NoValidParametersError` | 有効なパラメータ組み合わせがない |
+| `OptimizationTimeoutError` | タイムアウト発生 |
+
+`OptimizationTimeoutError`の属性:
+- `timeout` (`float`): タイムアウト秒数
+- `completed` (`int`): 完了した試行数
+- `total` (`int`): 総試行数
 
 ### バックテストシグナル (`backend/technical_tools/backtest_signals/`)
 

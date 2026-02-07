@@ -81,3 +81,39 @@ class PortfolioError(TechnicalToolsError):
     """Base exception for portfolio-related errors."""
 
     pass
+
+
+# Optimizer-related exceptions
+
+
+class OptimizerError(TechnicalToolsError):
+    """Base exception for optimizer-related errors."""
+
+    pass
+
+
+class InvalidSearchSpaceError(OptimizerError):
+    """Invalid search space definition."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class NoValidParametersError(OptimizerError):
+    """No valid parameter combinations after applying constraints."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class OptimizationTimeoutError(OptimizerError):
+    """Optimization exceeded the specified timeout."""
+
+    def __init__(self, timeout: float, completed: int, total: int) -> None:
+        self.timeout = timeout
+        self.completed = completed
+        self.total = total
+        super().__init__(
+            f"Optimization timed out after {timeout}s: "
+            f"completed {completed}/{total} trials"
+        )
