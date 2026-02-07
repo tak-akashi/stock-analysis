@@ -376,7 +376,7 @@ class StrategyOptimizer:
                 "macd_cross",
                 fast=params["macd_fast"],
                 slow=params["macd_slow"],
-                signal=params.get("macd_signal", 9),
+                signal_period=params.get("macd_signal", 9),
             )
 
         # Handle exit rules

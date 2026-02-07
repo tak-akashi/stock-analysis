@@ -1,0 +1,6 @@
+{"params": {"ma_short": 10, "ma_long": 75}, "metrics": {"total_return": 0.0016, "sharpe_ratio": 1.34, "max_drawdown": 0.0713, "win_rate": 1.0, "profit_factor": 99.99}, "oos_metrics": null}
+{"params": {"ma_short": 5, "ma_long": 75}, "metrics": {"total_return": 0.0021, "sharpe_ratio": 1.62, "max_drawdown": 0.0762, "win_rate": 1.0, "profit_factor": 99.99}, "oos_metrics": null}
+{"params": {"ma_short": 20, "ma_long": 75}, "metrics": {"total_return": 0.0017, "sharpe_ratio": 1.52, "max_drawdown": 0.0654, "win_rate": 1.0, "profit_factor": 99.99}, "oos_metrics": null}
+{"params": {"ma_short": 10, "ma_long": 50}, "metrics": {"total_return": 0.0018, "sharpe_ratio": 1.39, "max_drawdown": 0.0761, "win_rate": 1.0, "profit_factor": 99.99}, "oos_metrics": null}
+{"params": {"ma_short": 20, "ma_long": 50}, "metrics": {"total_return": 0.0024, "sharpe_ratio": 1.65, "max_drawdown": 0.0761, "win_rate": 1.0, "profit_factor": 99.99}, "oos_metrics": null}
+{"params": {"ma_short": 5, "ma_long": 50}, "metrics": {"total_return": 0.0017, "sharpe_ratio": 1.36, "max_drawdown": 0.0762, "win_rate": 1.0, "profit_factor": 99.99}, "oos_metrics": null}

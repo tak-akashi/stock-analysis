@@ -120,10 +120,15 @@ class BacktestResults:
         max_return = max(self._trade_returns) if self._trade_returns else 0.0
         max_loss = min(self._trade_returns) if self._trade_returns else 0.0
 
-        # Profit factor
+        # Profit factor (capped at 99.99 to avoid inf issues with JSON/visualization)
         total_profit = sum(t.pnl for t in self._winning_trades)
         total_loss = abs(sum(t.pnl for t in self._losing_trades))
-        profit_factor = total_profit / total_loss if total_loss > 0 else float("inf")
+        if total_loss > 0:
+            profit_factor = min(total_profit / total_loss, 99.99)
+        elif total_profit > 0:
+            profit_factor = 99.99  # All winning trades
+        else:
+            profit_factor = 0.0  # No profit, no loss
 
         # Max drawdown
         max_drawdown = self._calculate_max_drawdown()
