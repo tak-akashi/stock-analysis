@@ -64,6 +64,8 @@ Stock-Analysis/
 │       ├── backtester.py                 # Backtesterクラス（バックテスト実行）
 │       ├── backtest_results.py           # BacktestResultsクラス（結果分析）
 │       ├── virtual_portfolio.py          # VirtualPortfolioクラス（仮想ポートフォリオ）
+│       ├── optimizer.py                  # StrategyOptimizerクラス（戦略最適化）
+│       ├── optimization_results.py       # OptimizationResultsクラス（最適化結果）
 │       ├── data_sources/                 # データソース抽象化
 │       │   ├── __init__.py
 │       │   ├── base.py                   # DataSource抽象基底クラス
@@ -195,6 +197,8 @@ Stock-Analysis/
 | `backend/technical_tools/backtest_results.py` | BacktestResultsクラス（結果分析・可視化） |
 | `backend/technical_tools/virtual_portfolio.py` | VirtualPortfolioクラス（仮想ポートフォリオ） |
 | `backend/technical_tools/backtest_signals/` | バックテスト用シグナル定義（プラグイン形式） |
+| `backend/technical_tools/optimizer.py` | StrategyOptimizerクラス（戦略パラメータ最適化） |
+| `backend/technical_tools/optimization_results.py` | OptimizationResultsクラス（最適化結果分析・可視化） |
 
 ### スクリプト
 
@@ -239,6 +243,8 @@ Stock-Analysis/
 | `tests/test_backtest_results.py` | BacktestResultsクラス |
 | `tests/test_backtest_signals.py` | バックテストシグナル |
 | `tests/test_virtual_portfolio.py` | VirtualPortfolioクラス |
+| `tests/test_optimizer.py` | StrategyOptimizerクラス |
+| `tests/test_optimization_results.py` | OptimizationResultsクラス |
 | `tests/test_type8_optimization.py` | Type8最適化 |
 | `tests/test_rsi_optimization.py` | RSI最適化 |
 | `tests/test_fixes.py` | バグ修正検証 |
