@@ -162,7 +162,9 @@ def run_daily_analysis(
                         logger.error(
                             f"Invalid date format: {target_date}. Expected YYYY-MM-DD"
                         )
-                        return False
+                        raise RuntimeError(
+                            f"Invalid date format: {target_date}. Expected YYYY-MM-DD"
+                        )
                 else:
                     # Get latest date from jquants database
                     try:
@@ -176,10 +178,10 @@ def run_daily_analysis(
                             )
                         else:
                             logger.error("No data found in jquants database")
-                            return False
+                            raise RuntimeError("No data found in jquants database")
                     except Exception as e:
                         logger.error(f"Error getting latest date from database: {e}")
-                        return False
+                        raise RuntimeError(f"Error getting latest date from database: {e}") from e
 
                 calc_end_date_str = end_date.strftime("%Y-%m-%d")
                 calc_start_date_str = (
