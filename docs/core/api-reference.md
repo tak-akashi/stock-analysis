@@ -80,6 +80,16 @@ settings = get_settings()
 | `cache_size` | `int` | 10000 | キャッシュサイズ（ページ） |
 | `mmap_size` | `int` | 268435456 | メモリマップサイズ（256MB） |
 
+#### settings.slack
+
+| 属性 | 型 | デフォルト | 説明 |
+|-----|-----|---------|------|
+| `webhook_url` | `str` | `""` | Slack Webhook URL |
+| `error_webhook_url` | `str` | `""` | エラー専用Webhook URL（オプション） |
+| `enabled` | `bool` | `True` | 通知の有効/無効 |
+| `timeout_seconds` | `int` | `10` | HTTPタイムアウト（秒） |
+| `max_retries` | `int` | `3` | リトライ回数 |
+
 ---
 
 ## Market Reader パッケージ (`backend/market_reader/`)
@@ -1855,6 +1865,116 @@ ExcelファイルからTSE上場銘柄データを読み込み（内部使用）
 ---
 
 ## ユーティリティ (`backend/market_pipeline/utils/`)
+
+### SlackNotifier
+
+Slack Incoming Webhookによるジョブ結果通知。
+
+```python
+from market_pipeline.utils import SlackNotifier, JobContext, JobResult
+```
+
+#### SlackSettings (`backend/market_pipeline/config/settings.py`)
+
+| 属性 | 型 | デフォルト | 環境変数 | 説明 |
+|-----|-----|---------|---------|------|
+| `webhook_url` | `str` | `""` | `SLACK_WEBHOOK_URL` | Webhook URL |
+| `error_webhook_url` | `str` | `""` | `SLACK_ERROR_WEBHOOK_URL` | エラー専用Webhook URL（オプション） |
+| `enabled` | `bool` | `True` | `SLACK_ENABLED` | 通知の有効/無効 |
+| `timeout_seconds` | `int` | `10` | `SLACK_TIMEOUT_SECONDS` | HTTPタイムアウト（秒） |
+| `max_retries` | `int` | `3` | `SLACK_MAX_RETRIES` | リトライ回数 |
+
+**プロパティ**:
+- `is_configured` (`bool`): `webhook_url`が非空かつ`enabled`がTrueの場合True
+
+#### JobResult
+
+ジョブ実行結果を格納するデータクラス。
+
+```python
+@dataclass
+class JobResult:
+    job_name: str
+    success: bool = True
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    metrics: dict[str, str] = field(default_factory=dict)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+```
+
+**プロパティ**:
+- `duration_formatted` (`str`): 実行時間を"X分Y秒"形式で返す。開始/終了時刻が未設定の場合は"不明"
+
+#### SlackNotifier
+
+Slack Webhook APIへの通知送信クラス。
+
+##### コンストラクタ
+
+```python
+SlackNotifier()
+```
+
+設定は`get_settings().slack`から自動取得。
+
+##### プロパティ
+
+- `is_available` (`bool`): `webhook_url`が非空かつ`enabled`がTrueの場合True
+
+##### メソッド
+
+###### `send_success(job_result: JobResult) -> None`
+
+成功通知を送信。メトリクスと警告を含む。
+
+###### `send_error(job_result: JobResult) -> None`
+
+エラー通知を送信。`error_webhook_url`が設定されている場合はそちらに送信。トレースバック情報を含む。
+
+###### `send_warning(job_name: str, message: str, details: str = "") -> None`
+
+警告通知を送信。
+
+**共通動作**:
+- `is_available`がFalseの場合、送信をスキップしDEBUGログを出力
+- 送信失敗時は`max_retries`回リトライ（1秒間隔）
+- 全リトライ失敗後はWARNINGログを出力し例外を発生させない
+
+#### JobContext
+
+コンテキストマネージャでジョブを囲み、成功/エラー通知を自動送信。
+
+```python
+with JobContext("ジョブ名") as job:
+    job.add_metric("レコード数", "1,000")
+    job.add_warning("一部データ欠損")
+# 正常終了時は成功通知、例外時はエラー通知を自動送信
+```
+
+##### コンストラクタ
+
+```python
+JobContext(job_name: str)
+```
+
+##### メソッド
+
+###### `add_metric(key: str, value: str) -> None`
+
+通知に含めるメトリクスを追加。
+
+###### `add_warning(message: str) -> None`
+
+通知に含める警告を追加。
+
+**動作**:
+- `__enter__`: 開始時刻を記録し自身を返す
+- `__exit__`: 終了時刻を記録し、例外の有無に応じて`send_success`/`send_error`を呼び出す
+- 例外発生時はエラー通知後に例外を再送出
+- 通知処理自体の例外はキャッチしてWARNINGログに記録（ジョブの結果に影響しない）
+
+---
 
 ### ParallelProcessor
 

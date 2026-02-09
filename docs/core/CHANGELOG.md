@@ -5,6 +5,24 @@
 ## [Unreleased]
 
 ### Added
+- `backend/market_pipeline/utils/slack_notifier.py`: Slack Incoming Webhook通知モジュール
+  - `SlackNotifier`クラス: 成功・エラー・警告の3種類の通知送信
+  - `JobContext`コンテキストマネージャ: `with`文によるジョブの自動通知
+  - `JobResult`データクラス: ジョブ実行結果（メトリクス、警告、実行時間）を保持
+  - リトライロジック（最大3回、1秒間隔）
+  - 通知失敗がジョブの処理結果に影響しない設計
+- `backend/market_pipeline/utils/__init__.py`: SlackNotifier, JobContext, JobResultのエクスポート
+- `backend/market_pipeline/config/settings.py`: `SlackSettings`クラス追加
+  - `SLACK_WEBHOOK_URL`, `SLACK_ERROR_WEBHOOK_URL`, `SLACK_ENABLED`, `SLACK_TIMEOUT_SECONDS`, `SLACK_MAX_RETRIES`環境変数サポート
+- `tests/test_slack_notifier.py`: SlackNotifier/JobContext/JobResultのテスト
+- `.env.example`: Slack通知設定セクション追加
+
+### Changed
+- `scripts/run_daily_jquants.py`: JobContext統合（レコード数・銘柄数・データ期間を通知）
+- `scripts/run_daily_analysis.py`: JobContext統合（対象日・実行モジュールを通知）
+- `scripts/run_weekly_tasks.py`: JobContext統合（財務データ・統合分析の完了状況を通知）
+- `scripts/run_monthly_master.py`: JobContext統合（総銘柄数・アクティブ銘柄数を通知）
+
 - `backend/technical_tools/optimizer.py`: 戦略パラメータ最適化エンジン
   - `StrategyOptimizer`クラス: Backtesterを利用したパラメータ最適化
   - `add_search_space()`: 探索パラメータの定義（MA期間、RSI閾値、エグジットルール等）

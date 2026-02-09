@@ -148,6 +148,7 @@ Stock-Analysisは、日本株式市場データの自動収集・分析システ
 |-----------|------|
 | `parallel_processor.py` | ProcessPoolExecutor/ThreadPoolExecutorラッパー |
 | `cache_manager.py` | APIレスポンス・計算結果のメモリキャッシュ |
+| `slack_notifier.py` | Slack Incoming Webhook通知（SlackNotifier, JobContext, JobResult） |
 
 ### 5. データアクセスレイヤー (`backend/market_reader/`)
 

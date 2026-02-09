@@ -10,6 +10,7 @@ from datetime import datetime
 
 from market_pipeline.config import get_settings
 from market_pipeline.jquants.data_processor import JQuantsDataProcessor
+from market_pipeline.utils.slack_notifier import JobContext
 
 
 def setup_logging(settings):
@@ -38,41 +39,45 @@ def main():
     logger.info("=== J-Quants日次データ取得開始 ===")
 
     try:
-        # データディレクトリ作成
-        settings.paths.data_dir.mkdir(parents=True, exist_ok=True)
-        db_path = settings.paths.jquants_db
+        with JobContext("J-Quants日次データ取得") as job:
+            # データディレクトリ作成
+            settings.paths.data_dir.mkdir(parents=True, exist_ok=True)
+            db_path = settings.paths.jquants_db
 
-        logger.info(f"データベースパス: {db_path}")
-        logger.info(
-            f"設定: max_concurrent_requests={settings.jquants.max_concurrent_requests}, "
-            f"batch_size={settings.jquants.batch_size}, "
-            f"request_delay={settings.jquants.request_delay}s"
-        )
+            logger.info(f"データベースパス: {db_path}")
+            logger.info(
+                f"設定: max_concurrent_requests={settings.jquants.max_concurrent_requests}, "
+                f"batch_size={settings.jquants.batch_size}, "
+                f"request_delay={settings.jquants.request_delay}s"
+            )
 
-        processor = JQuantsDataProcessor(
-            max_concurrent_requests=settings.jquants.max_concurrent_requests,
-            batch_size=settings.jquants.batch_size,
-            request_delay=settings.jquants.request_delay,
-        )
+            processor = JQuantsDataProcessor(
+                max_concurrent_requests=settings.jquants.max_concurrent_requests,
+                batch_size=settings.jquants.batch_size,
+                request_delay=settings.jquants.request_delay,
+            )
 
-        # データベースの存在確認
-        db_exists = db_path.exists()
-        logger.info(f"データベース存在: {'はい' if db_exists else 'いいえ'}")
+            # データベースの存在確認
+            db_exists = db_path.exists()
+            logger.info(f"データベース存在: {'はい' if db_exists else 'いいえ'}")
 
-        if not db_exists:
-            logger.info("初回実行: 過去5年分のデータを取得します")
-            processor.get_all_prices_for_past_5_years_to_db_optimized(str(db_path))
-        else:
-            logger.info("差分更新を実行します")
-            processor.update_prices_to_db_optimized(str(db_path))
+            if not db_exists:
+                logger.info("初回実行: 過去5年分のデータを取得します")
+                processor.get_all_prices_for_past_5_years_to_db_optimized(str(db_path))
+            else:
+                logger.info("差分更新を実行します")
+                processor.update_prices_to_db_optimized(str(db_path))
 
-        # 統計情報を表示
-        stats = processor.get_database_stats(str(db_path))
-        if stats:
-            logger.info("データベース統計:")
-            logger.info(f"  レコード数: {stats.get('record_count', 'N/A')}")
-            logger.info(f"  銘柄数: {stats.get('code_count', 'N/A')}")
-            logger.info(f"  データ期間: {stats.get('date_range', 'N/A')}")
+            # 統計情報を表示・通知に追加
+            stats = processor.get_database_stats(str(db_path))
+            if stats:
+                logger.info("データベース統計:")
+                logger.info(f"  レコード数: {stats.get('record_count', 'N/A')}")
+                logger.info(f"  銘柄数: {stats.get('code_count', 'N/A')}")
+                logger.info(f"  データ期間: {stats.get('date_range', 'N/A')}")
+                job.add_metric("レコード数", str(stats.get("record_count", "N/A")))
+                job.add_metric("銘柄数", str(stats.get("code_count", "N/A")))
+                job.add_metric("データ期間", str(stats.get("date_range", "N/A")))
 
         logger.info("=== J-Quants日次データ取得完了 ===")
 
