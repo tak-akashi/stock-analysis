@@ -39,8 +39,10 @@ Stock-Analysis/
 │   │   │   └── master_db.py
 │   │   │
 │   │   ├── utils/                        # ユーティリティ
+│   │   │   ├── __init__.py              # エクスポート定義
 │   │   │   ├── parallel_processor.py     # 並列処理フレームワーク
-│   │   │   └── cache_manager.py          # キャッシュ管理
+│   │   │   ├── cache_manager.py          # キャッシュ管理
+│   │   │   └── slack_notifier.py         # Slack通知（SlackNotifier, JobContext, JobResult）
 │   │   │
 │   │   └── yfinance/                     # yfinance連携（レガシー、移行中）
 │   │       └── data_processor.py
@@ -107,6 +109,7 @@ Stock-Analysis/
 │   ├── test_rsi_optimization.py
 │   ├── test_fixes.py
 │   ├── test_stock_reader.py          # market_readerパッケージテスト
+│   ├── test_slack_notifier.py       # SlackNotifier/JobContext/JobResult
 │   ├── simple_test.py
 │   ├── benchmark_integrated_analysis_optimization.py  # パフォーマンスベンチマーク
 │   ├── benchmark_jquants_performance.py               # J-Quantsパフォーマンスベンチマーク
@@ -186,6 +189,7 @@ Stock-Analysis/
 | `backend/market_pipeline/analysis/integrated_scores_repository.py` | integrated_scoresテーブルCRUD |
 | `backend/market_pipeline/utils/parallel_processor.py` | 並列処理ラッパー |
 | `backend/market_pipeline/utils/cache_manager.py` | キャッシュ管理 |
+| `backend/market_pipeline/utils/slack_notifier.py` | Slack Incoming Webhook通知（SlackNotifier, JobContext, JobResult） |
 | `backend/market_reader/reader.py` | DataReaderクラス（pandas_datareader風API） |
 | `backend/market_reader/exceptions.py` | カスタム例外クラス |
 | `backend/technical_tools/analyzer.py` | TechnicalAnalyzerファサードクラス（テクニカル分析統合） |
@@ -245,6 +249,7 @@ Stock-Analysis/
 | `tests/test_virtual_portfolio.py` | VirtualPortfolioクラス |
 | `tests/test_optimizer.py` | StrategyOptimizerクラス |
 | `tests/test_optimization_results.py` | OptimizationResultsクラス |
+| `tests/test_slack_notifier.py` | SlackNotifier/JobContext/JobResult |
 | `tests/test_type8_optimization.py` | Type8最適化 |
 | `tests/test_rsi_optimization.py` | RSI最適化 |
 | `tests/test_fixes.py` | バグ修正検証 |

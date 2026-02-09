@@ -41,7 +41,7 @@
 │   │   ├── config/      # 設定管理（Pydantic Settings）
 │   │   ├── jquants/     # J-Quants API関連の処理（株価・財務諸表）
 │   │   ├── master/      # 銘柄マスター関連の処理
-│   │   ├── utils/       # ユーティリティ（キャッシュ、並列処理等）
+│   │   ├── utils/       # ユーティリティ（キャッシュ、並列処理、Slack通知等）
 │   │   └── yfinance/    # yfinance連携（レガシー）
 │   ├── market_reader/   # pandas_datareader風のデータアクセスAPI（旧stock_reader/）
 │   └── technical_tools/ # Jupyter Notebook用テクニカル分析ツール
@@ -187,6 +187,27 @@
 0 23 * * 1-5 /path/to/python /Users/tak/Markets/Stocks/Stock-Analysis/scripts/run_daily_analysis.py >> /Users/tak/Markets/Stocks/Stock-Analysis/logs/daily_analysis.log 2>&1
 ```
 **注意:** `/path/to/python` の部分は、使用しているPython実行環境の絶対パスに置き換えてください。ログファイルのパスも適宜調整してください。
+
+### Slack通知
+
+cronスクリプトの実行結果をSlack Incoming Webhookで自動通知します。4つのcronスクリプト全てに統合済みです。
+
+**設定:** `.env`ファイルに以下を追加:
+
+```bash
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx/yyy/zzz
+# SLACK_ERROR_WEBHOOK_URL=           # オプション: エラー専用チャンネル
+# SLACK_ENABLED=true                 # false で通知無効化
+# SLACK_TIMEOUT_SECONDS=10
+# SLACK_MAX_RETRIES=3
+```
+
+**特徴:**
+- `SLACK_WEBHOOK_URL`未設定時は通知をスキップ（エラーなく動作）
+- 通知失敗がジョブの処理結果に影響しない
+- リトライロジック（最大3回、1秒間隔）
+- 成功時はメトリクス（レコード数、銘柄数等）を含む通知を送信
+- エラー時はトレースバック情報を含む通知を送信
 
 ## Market Reader パッケージ
 

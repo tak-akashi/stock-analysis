@@ -13,6 +13,7 @@ import sys
 from datetime import datetime
 
 from market_pipeline.config import get_settings
+from market_pipeline.utils.slack_notifier import JobContext
 
 
 class ColoredFormatter(logging.Formatter):
@@ -70,54 +71,58 @@ def main():
     print(f"=== 週次タスク開始 {datetime.now()} ===")
 
     try:
-        if run_statements:
-            print(f"=== J-Quants Statements データ取得開始 {datetime.now()} ===")
-            print(
-                f"    設定: max_concurrent_requests={settings.jquants.max_concurrent_requests}, "
-                f"batch_size={settings.jquants.batch_size}, "
-                f"request_delay={settings.jquants.request_delay}s"
-            )
+        with JobContext("週次タスク") as job:
+            if run_statements:
+                print(f"=== J-Quants Statements データ取得開始 {datetime.now()} ===")
+                print(
+                    f"    設定: max_concurrent_requests={settings.jquants.max_concurrent_requests}, "
+                    f"batch_size={settings.jquants.batch_size}, "
+                    f"request_delay={settings.jquants.request_delay}s"
+                )
 
-            # 1. 財務諸表データを取得
-            from market_pipeline.jquants.statements_processor import (
-                JQuantsStatementsProcessor,
-            )
+                # 1. 財務諸表データを取得
+                from market_pipeline.jquants.statements_processor import (
+                    JQuantsStatementsProcessor,
+                )
 
-            processor = JQuantsStatementsProcessor(
-                max_concurrent_requests=settings.jquants.max_concurrent_requests,
-                batch_size=settings.jquants.batch_size,
-                request_delay=settings.jquants.request_delay,
-            )
-            processor.get_all_statements(str(settings.paths.statements_db))
-            print(f"=== 財務諸表データ取得完了 {datetime.now()} ===")
+                processor = JQuantsStatementsProcessor(
+                    max_concurrent_requests=settings.jquants.max_concurrent_requests,
+                    batch_size=settings.jquants.batch_size,
+                    request_delay=settings.jquants.request_delay,
+                )
+                processor.get_all_statements(str(settings.paths.statements_db))
+                job.add_metric("財務データ取得", "完了")
+                print(f"=== 財務諸表データ取得完了 {datetime.now()} ===")
 
-            # 2. 財務指標を計算
-            print(f"=== 財務指標計算開始 {datetime.now()} ===")
-            from market_pipeline.jquants.fundamentals_calculator import (
-                FundamentalsCalculator,
-            )
+                # 2. 財務指標を計算
+                print(f"=== 財務指標計算開始 {datetime.now()} ===")
+                from market_pipeline.jquants.fundamentals_calculator import (
+                    FundamentalsCalculator,
+                )
 
-            calculator = FundamentalsCalculator(
-                statements_db_path=str(settings.paths.statements_db),
-                jquants_db_path=str(settings.paths.jquants_db),
-            )
-            processed = calculator.update_all_fundamentals(
-                str(settings.paths.statements_db)
-            )
-            print(f"    {processed} 銘柄の財務指標を計算しました")
-            print(f"=== 財務指標計算完了 {datetime.now()} ===")
+                calculator = FundamentalsCalculator(
+                    statements_db_path=str(settings.paths.statements_db),
+                    jquants_db_path=str(settings.paths.jquants_db),
+                )
+                processed = calculator.update_all_fundamentals(
+                    str(settings.paths.statements_db)
+                )
+                job.add_metric("財務指標計算", f"{processed}銘柄")
+                print(f"    {processed} 銘柄の財務指標を計算しました")
+                print(f"=== 財務指標計算完了 {datetime.now()} ===")
 
-        if run_analysis:
-            print(f"=== 統合分析処理開始 {datetime.now()} ===")
-            analysis_script_path = (
-                settings.paths.base_dir
-                / "backend"
-                / "market_pipeline"
-                / "analysis"
-                / "integrated_analysis2.py"
-            )
-            subprocess.run([sys.executable, str(analysis_script_path)], check=True)
-            print(f"=== 統合分析処理完了 {datetime.now()} ===")
+            if run_analysis:
+                print(f"=== 統合分析処理開始 {datetime.now()} ===")
+                analysis_script_path = (
+                    settings.paths.base_dir
+                    / "backend"
+                    / "market_pipeline"
+                    / "analysis"
+                    / "integrated_analysis2.py"
+                )
+                subprocess.run([sys.executable, str(analysis_script_path)], check=True)
+                job.add_metric("統合分析", "完了")
+                print(f"=== 統合分析処理完了 {datetime.now()} ===")
 
         print(f"=== 週次タスク完了 {datetime.now()} ===")
 

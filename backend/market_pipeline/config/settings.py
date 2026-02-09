@@ -148,6 +148,23 @@ class DatabaseSettings(BaseSettings):
         ]
 
 
+class SlackSettings(BaseSettings):
+    """Slack notification settings."""
+
+    model_config = SettingsConfigDict(env_prefix="SLACK_", extra="ignore")
+
+    webhook_url: str = ""
+    error_webhook_url: str = ""
+    enabled: bool = True
+    timeout_seconds: int = 10
+    max_retries: int = 3
+
+    @property
+    def is_configured(self) -> bool:
+        """Return True if webhook_url is set and notifications are enabled."""
+        return bool(self.webhook_url) and self.enabled
+
+
 class LoggingSettings(BaseSettings):
     """Logging configuration."""
 
@@ -175,6 +192,7 @@ class Settings(BaseSettings):
     analysis: AnalysisSettings = Field(default_factory=AnalysisSettings)
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
+    slack: SlackSettings = Field(default_factory=SlackSettings)
 
     # Global processing settings
     n_workers: Optional[int] = None  # None = auto-detect CPU count

@@ -80,6 +80,7 @@ graph LR
         subgraph Utils["utils/"]
             PP[parallel_processor.py]
             CM[cache_manager.py]
+            SN[slack_notifier.py]
         end
     end
 
@@ -138,6 +139,7 @@ sequenceDiagram
     participant DB as jquants.db
     participant RDA as run_daily_analysis
     participant ADB as analysis_results.db
+    participant Slack as Slack Webhook
 
     Note over Cron: 平日 22:00
     Cron->>RDJ: 起動
@@ -150,6 +152,7 @@ sequenceDiagram
     end
 
     RDJ->>DB: バッチ保存
+    RDJ->>Slack: 成功/エラー通知
     RDJ-->>Cron: 完了
 
     Note over Cron: 平日 23:00
@@ -163,6 +166,7 @@ sequenceDiagram
     end
 
     RDA->>ADB: 結果保存
+    RDA->>Slack: 成功/エラー通知
     RDA-->>Cron: 完了
 ```
 
@@ -292,6 +296,7 @@ classDiagram
         +AnalysisSettings analysis
         +DatabaseSettings database
         +LoggingSettings logging
+        +SlackSettings slack
         +Optional~int~ n_workers
         +int batch_size
     }
@@ -342,11 +347,21 @@ classDiagram
         +int mmap_size
     }
 
+    class SlackSettings {
+        +str webhook_url
+        +str error_webhook_url
+        +bool enabled
+        +int timeout_seconds
+        +int max_retries
+        +bool is_configured
+    }
+
     Settings *-- PathSettings
     Settings *-- JQuantsAPISettings
     Settings *-- YFinanceSettings
     Settings *-- AnalysisSettings
     Settings *-- DatabaseSettings
+    Settings *-- SlackSettings
 ```
 
 ## デプロイメント図
@@ -385,6 +400,7 @@ graph TB
 
     subgraph External["外部サービス"]
         JQAPI[J-Quants API]
+        SLACK[Slack Webhook]
     end
 
     C1 --> PY
@@ -401,6 +417,7 @@ graph TB
     PY --> ERR
 
     PY <--> JQAPI
+    PY --> SLACK
 ```
 
 ## パフォーマンス最適化の構造
