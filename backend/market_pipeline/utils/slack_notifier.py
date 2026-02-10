@@ -65,7 +65,11 @@ class SlackNotifier:
     def send_success(self, job_result: JobResult) -> None:
         """Send a success notification."""
         if not self.is_available:
-            logger.debug("Slack通知はスキップされました（未設定）")
+            logger.info(
+                "Slack通知スキップ（webhook_url=%s, enabled=%s）",
+                "設定済み" if self._webhook_url else "未設定",
+                self._enabled,
+            )
             return
 
         blocks = [
@@ -84,11 +88,16 @@ class SlackNotifier:
 
         text = "\n".join(blocks)
         self._post(self._webhook_url, text)
+        logger.info("Slack成功通知送信完了: %s", job_result.job_name)
 
     def send_error(self, job_result: JobResult) -> None:
         """Send an error notification with traceback info."""
         if not self.is_available:
-            logger.debug("Slack通知はスキップされました（未設定）")
+            logger.info(
+                "Slack通知スキップ（webhook_url=%s, enabled=%s）",
+                "設定済み" if self._webhook_url else "未設定",
+                self._enabled,
+            )
             return
 
         blocks = [
@@ -105,11 +114,16 @@ class SlackNotifier:
         text = "\n".join(blocks)
         url = self._error_webhook_url if self._error_webhook_url else self._webhook_url
         self._post(url, text)
+        logger.info("Slackエラー通知送信完了: %s", job_result.job_name)
 
     def send_warning(self, job_name: str, message: str, details: str = "") -> None:
         """Send a warning notification."""
         if not self.is_available:
-            logger.debug("Slack通知はスキップされました（未設定）")
+            logger.info(
+                "Slack通知スキップ（webhook_url=%s, enabled=%s）",
+                "設定済み" if self._webhook_url else "未設定",
+                self._enabled,
+            )
             return
 
         blocks = [f"⚠️ *{job_name}* 警告", message]
@@ -118,6 +132,7 @@ class SlackNotifier:
 
         text = "\n".join(blocks)
         self._post(self._webhook_url, text)
+        logger.info("Slack警告通知送信完了: %s", job_name)
 
     def _post(self, url: str, text: str) -> None:
         """Post a message to Slack with retry logic."""
@@ -128,6 +143,7 @@ class SlackNotifier:
             try:
                 resp = requests.post(url, json=payload, timeout=self._timeout)
                 resp.raise_for_status()
+                logger.info("Slack Webhook送信成功 (status=%d)", resp.status_code)
                 return
             except Exception as e:
                 last_exc = e
@@ -140,7 +156,7 @@ class SlackNotifier:
                 if attempt < self._max_retries - 1:
                     time.sleep(1)
 
-        logger.warning(
+        logger.error(
             "Slack通知の送信に失敗しました（全%dリトライ失敗）: %s",
             self._max_retries,
             last_exc,
